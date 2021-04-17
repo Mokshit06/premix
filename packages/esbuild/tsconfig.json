@@ -5,5 +5,8 @@
     "esModuleInterop": true,
     "jsx": "preserve",
     "resolveJsonModule": true
-  }
+  },
+  "exclude": [
+    "build"
+  ]
 }

@@ -12,19 +12,24 @@ export interface Link {
   media?: string;
 }
 
-export type LinksFunction = () => Link[];
-export type MetaFunction = () => Meta;
+export type LinksFunction<TData = any> = (data: TData) => Link[];
+export type MetaFunction<TData = any> = (data: TData) => Meta;
+export type LoaderFunction<TData = Record<string, any>> = ({
+  params,
+}: {
+  params: any;
+}) => Promise<{
+  props: TData;
+}>;
 
 export type Page = Promise<{
   default: (props: any) => JSX.Element;
   meta?: MetaFunction;
   links?: LinksFunction;
+  loader?: LoaderFunction;
 }>;
 
 export interface Route {
   path: string;
   page: () => Page;
-  loader?: () => Promise<{
-    default: () => Record<string, any>;
-  }>;
 }

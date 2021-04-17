@@ -1,6 +1,9 @@
 const esbuild = require('esbuild');
 const pkg = require('../package.json');
 
+const isProd = process.env.NODE_ENV === 'production';
+const shouldWatch = process.env.WATCH === 'true';
+
 const urlPlugin = {
   name: 'url-loader',
   setup(build) {
@@ -28,7 +31,7 @@ const urlPlugin = {
       return {
         contents: result.outputFiles[0].text,
         loader: 'file',
-        watchFiles: [args.path],
+        watchFiles: shouldWatch ? [args.path] : [],
       };
     });
   },
@@ -38,10 +41,16 @@ const urlPlugin = {
 const commonConfig = {
   inject: ['./preact-shim.js'],
   bundle: true,
-  watch: true,
+  watch: shouldWatch,
   publicPath: '/build',
   plugins: [urlPlugin],
-  sourcemap: true,
+  metafile: true,
+  ...(isProd
+    ? {
+        minify: true,
+        treeShaking: true,
+      }
+    : { sourcemap: true }),
 };
 
 Promise.all([
@@ -54,8 +63,8 @@ Promise.all([
   }),
   esbuild.build({
     ...commonConfig,
-    entryPoints: ['./client.tsx'],
-    platform: 'neutral',
+    entryPoints: ['./app/entry-client.tsx'],
+    platform: 'node',
     outdir: 'public/build',
     format: 'esm',
     splitting: true,

@@ -2,12 +2,11 @@ import { Route } from './types';
 
 export const routes: Route[] = [
   {
-    page: () => import('./pages'),
     path: '/',
-    loader: () => import('./loaders'),
+    page: () => import('./pages'),
   },
   {
-    path: '/about',
-    page: () => import('./pages/about'),
+    path: '/post/:post',
+    page: () => import('./pages/post'),
   },
 ];
