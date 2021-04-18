@@ -1,3 +1,5 @@
 node_modules
 build
 public/build
+*.db
+*.db-journal

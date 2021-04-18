@@ -1,4 +1,4 @@
-import { Route } from './types';
+import { Route } from '../src/types';
 
 export const routes: Route[] = [
   {
@@ -8,5 +8,9 @@ export const routes: Route[] = [
   {
     path: '/post/:post',
     page: () => import('./pages/post'),
+  },
+  {
+    path: '/action',
+    page: () => import('./pages/action'),
   },
 ];

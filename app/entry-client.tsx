@@ -1,3 +1,4 @@
+import 'preact/debug';
 import { hydrate } from 'preact/compat';
 import { RemixProvider } from '../src';
 import { currentPage } from '../src/client';

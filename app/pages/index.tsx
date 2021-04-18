@@ -1,4 +1,4 @@
-import { LinksFunction, LoaderFunction, MetaFunction } from '../types';
+import { LinksFunction, LoaderFunction, MetaFunction } from '../../src/types';
 import styles from 'url:../styles/style.css';
 import { useRouteData } from '../../src';
 
@@ -18,12 +18,12 @@ export const links: LinksFunction = data => {
 };
 
 export default function Home() {
-  const { posts } = useRouteData();
+  const [{ posts }] = useRouteData();
 
   return (
     <>
       {posts.map(post => (
-        <div>
+        <div key={post.id}>
           <a href={`/post/${post.id}`}>{post.title}</a>
         </div>
       ))}

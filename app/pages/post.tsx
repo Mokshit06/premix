@@ -1,4 +1,4 @@
-import { LinksFunction, LoaderFunction, MetaFunction } from '../types';
+import { LinksFunction, LoaderFunction, MetaFunction } from '../../src/types';
 import styles from 'url:../styles/style.css';
 import { useRouteData } from '../../src';
 
@@ -19,7 +19,7 @@ export const links: LinksFunction = data => {
 };
 
 export default function Post() {
-  const { post } = useRouteData();
+  const [{ post }] = useRouteData();
 
   return (
     <>

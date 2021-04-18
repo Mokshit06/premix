@@ -39,27 +39,32 @@ const urlPlugin = {
 
 /** @type {esbuild.BuildOptions} */
 const commonConfig = {
-  inject: ['./preact-shim.js'],
+  inject: ['./react-shim.js'],
   bundle: true,
   watch: shouldWatch,
   publicPath: '/build',
   plugins: [urlPlugin],
+  define: {
+    'process.env.NODE_ENV': isProd ? "'production'" : "'development'",
+  },
+  external: ['@prisma/client'],
   metafile: true,
   ...(isProd
     ? {
         minify: true,
         treeShaking: true,
+        sourcemap: true,
       }
-    : { sourcemap: true }),
+    : {}),
 };
 
 Promise.all([
   esbuild.build({
     ...commonConfig,
-    entryPoints: ['./server.tsx'],
+    entryPoints: ['./server.ts'],
     platform: 'node',
     outdir: 'build',
-    external: Object.keys(pkg.dependencies),
+    external: [...commonConfig.external, ...Object.keys(pkg.dependencies)],
   }),
   esbuild.build({
     ...commonConfig,
@@ -68,5 +73,11 @@ Promise.all([
     outdir: 'public/build',
     format: 'esm',
     splitting: true,
+  }),
+  esbuild.build({
+    ...commonConfig,
+    entryPoints: ['./prerender.ts'],
+    platform: 'node',
+    outfile: 'build/prerender.js',
   }),
 ]).catch(() => process.exit(1));
