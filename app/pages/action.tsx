@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import styles from 'url:../styles/action.css';
 import { Form, usePendingFormSubmit, useRouteData } from '../../src';
 import Link from '../../src/link';
@@ -9,7 +8,7 @@ import type {
   MetaFunction,
 } from '../../src/types';
 import Button from '../components/Button';
-import { prisma } from '../lib/prisma.server';
+import { prisma } from '../lib/prisma';
 
 export const meta: MetaFunction = () => {
   return {
@@ -49,7 +48,7 @@ export const action: ActionFunction = async (req, res) => {
   res.redirect('/action');
 };
 
-export default function Home() {
+export default function ActionPage() {
   const [{ allUsers }] = useRouteData();
   const pendingForm = usePendingFormSubmit();
 

@@ -1,5 +1,6 @@
 const esbuild = require('esbuild');
 const pkg = require('../package.json');
+const babel = require('@babel/core');
 
 const isProd = process.env.NODE_ENV === 'production';
 const shouldWatch = process.env.WATCH === 'true';
@@ -64,6 +65,37 @@ const serverScriptPlugin = {
   },
 };
 
+/** @type {esbuild.Plugin} */
+const premixPageTransform = {
+  name: 'proxy-module',
+  setup(build) {
+    const fs = require('fs');
+
+    build.onLoad({ filter: /\/pages\/.*\.(tsx|jsx|js)$/ }, async args => {
+      const contents = await fs.promises.readFile(args.path, 'utf8');
+      try {
+        const transformOne = await babel.transformAsync(contents, {
+          filename: 'noop.tsx',
+          presets: ['@babel/preset-typescript'],
+          plugins: ['./src/babel/transform'],
+        });
+        const transformTwo = await babel.transformAsync(transformOne.code, {
+          filename: 'noop.tsx',
+          presets: ['@babel/preset-typescript'],
+          plugins: ['babel-plugin-remove-unused-import'],
+        });
+
+        return {
+          contents: transformTwo.code,
+          loader: 'jsx',
+        };
+      } catch (error) {
+        console.log(error);
+      }
+    });
+  },
+};
+
 /** @type {esbuild.BuildOptions} */
 const commonConfig = {
   inject: ['./src/react-shim.js'],
@@ -74,15 +106,11 @@ const commonConfig = {
   define: {
     'process.env.NODE_ENV': isProd ? "'production'" : "'development'",
   },
-  external: ['@prisma/client'],
+  external: ['_http_common'],
   metafile: true,
-  sourcemap: true,
-  ...(isProd
-    ? {
-        minify: true,
-        treeShaking: true,
-      }
-    : {}),
+  sourcemap: !isProd,
+  minify: isProd,
+  treeShaking: true,
 };
 
 const buildServer = () =>
@@ -96,19 +124,19 @@ const buildServer = () =>
       ...Object.keys(pkg.dependencies),
       ...Object.keys(pkg.devDependencies),
     ],
-    plugins: [...commonConfig.plugins, clientScriptPlugin],
+    plugins: [clientScriptPlugin, ...commonConfig.plugins],
   });
 
 const buildClient = () =>
   esbuild.build({
     ...commonConfig,
     entryPoints: ['./app/entry-client.tsx'],
-    platform: 'node',
+    platform: 'browser',
     outdir: 'public/build',
     format: 'esm',
     metafile: true,
     splitting: true,
-    plugins: [...commonConfig.plugins, serverScriptPlugin],
+    plugins: [premixPageTransform, serverScriptPlugin, ...commonConfig.plugins],
   });
 
 async function build() {
