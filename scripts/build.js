@@ -4,6 +4,7 @@ const pkg = require('../package.json');
 const isProd = process.env.NODE_ENV === 'production';
 const shouldWatch = process.env.WATCH === 'true';
 
+/** @type {esbuild.Plugin} */
 const urlPlugin = {
   name: 'url-loader',
   setup(build) {
@@ -37,9 +38,35 @@ const urlPlugin = {
   },
 };
 
+/** @type {esbuild.Plugin} */
+const clientScriptPlugin = {
+  name: 'client-script',
+  setup(build) {
+    build.onLoad({ filter: /\.client\.(ts|js)$/ }, args => {
+      return {
+        contents: `module.exports = {}`,
+        loader: 'js',
+      };
+    });
+  },
+};
+
+/** @type {esbuild.Plugin} */
+const serverScriptPlugin = {
+  name: 'server-script',
+  setup(build) {
+    build.onLoad({ filter: /\.server\.(ts|js)/ }, args => {
+      return {
+        contents: `module.exports = {}`,
+        loader: 'js',
+      };
+    });
+  },
+};
+
 /** @type {esbuild.BuildOptions} */
 const commonConfig = {
-  inject: ['./react-shim.js'],
+  inject: ['./src/react-shim.js'],
   bundle: true,
   watch: shouldWatch,
   publicPath: '/build',
@@ -49,35 +76,43 @@ const commonConfig = {
   },
   external: ['@prisma/client'],
   metafile: true,
+  sourcemap: true,
   ...(isProd
     ? {
         minify: true,
         treeShaking: true,
-        sourcemap: true,
       }
     : {}),
 };
 
-Promise.all([
+const buildServer = () =>
   esbuild.build({
     ...commonConfig,
     entryPoints: ['./server.ts'],
     platform: 'node',
     outdir: 'build',
-    external: [...commonConfig.external, ...Object.keys(pkg.dependencies)],
-  }),
+    external: [
+      ...commonConfig.external,
+      ...Object.keys(pkg.dependencies),
+      ...Object.keys(pkg.devDependencies),
+    ],
+    plugins: [...commonConfig.plugins, clientScriptPlugin],
+  });
+
+const buildClient = () =>
   esbuild.build({
     ...commonConfig,
     entryPoints: ['./app/entry-client.tsx'],
     platform: 'node',
     outdir: 'public/build',
     format: 'esm',
+    metafile: true,
     splitting: true,
-  }),
-  esbuild.build({
-    ...commonConfig,
-    entryPoints: ['./prerender.ts'],
-    platform: 'node',
-    outfile: 'build/prerender.js',
-  }),
-]).catch(() => process.exit(1));
+    plugins: [...commonConfig.plugins, serverScriptPlugin],
+  });
+
+async function build() {
+  await Promise.all([buildServer(), buildClient()]);
+}
+
+build();

@@ -1,6 +1,6 @@
-import { LinksFunction, LoaderFunction, MetaFunction } from '../../src/types';
 import styles from 'url:../styles/style.css';
 import { useRouteData } from '../../src';
+import { LinksFunction, LoaderFunction, MetaFunction } from '../../src/types';
 
 export const meta: MetaFunction = data => {
   return {
@@ -17,20 +17,6 @@ export const links: LinksFunction = data => {
   ];
 };
 
-export default function Home() {
-  const [{ posts }] = useRouteData();
-
-  return (
-    <>
-      {posts.map(post => (
-        <div key={post.id}>
-          <a href={`/post/${post.id}`}>{post.title}</a>
-        </div>
-      ))}
-    </>
-  );
-}
-
 export const loader: LoaderFunction = async () => {
   const res = await fetch(
     'https://jsonplaceholder.typicode.com/posts?_limit=5'
@@ -43,3 +29,17 @@ export const loader: LoaderFunction = async () => {
     },
   };
 };
+
+export default function Home() {
+  const [{ posts }] = useRouteData();
+
+  return (
+    <>
+      {posts.map(post => (
+        <div key={post.id}>
+          <a href={`/${post.id}`}>{post.title}</a>
+        </div>
+      ))}
+    </>
+  );
+}

@@ -1,8 +1,9 @@
 import { RequestHandler, Router } from 'express';
 import fetch from 'node-fetch';
-import { JSX } from 'preact/compat';
+import param from 'regexparam';
 import handleRequest from '../app/entry-server';
 import { routes } from '../app/routes';
+import exec from './utils/exec';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/renderApp';
 
@@ -11,6 +12,22 @@ global.fetch = fetch as any;
 export function createRequestHandler(): RequestHandler {
   const router = Router();
 
+  router.get('/data', async (req, res) => {
+    const { path, href } = req.query;
+
+    if (!path) return res.status(404).send();
+
+    const route = routes.find(x => matchRoute(x.path, path as string));
+    const page = await route.page();
+
+    const params = exec(href as string, param(route.path));
+    const data = await page.loader({ params });
+    const meta = page.meta(data.props);
+    const links = page.links(data.props);
+
+    res.json({ meta, links, data });
+  });
+
   router.get('*', async (req, res) => {
     const RemixApp = await renderApp(req.originalUrl);
 
@@ -18,8 +35,7 @@ export function createRequestHandler(): RequestHandler {
       return res.status(404).send('Page not found');
     }
 
-    const html = handleRequest(RemixApp as () => JSX.Element);
-
+    const html = handleRequest(RemixApp);
     res.setHeader('content-type', 'text/html');
     res.send(html);
   });

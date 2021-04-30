@@ -1,5 +1,7 @@
+import { StaticRouter } from 'react-router-dom';
 import param from 'regexparam';
-import { RemixProvider } from '..';
+import { URL } from 'url';
+import { PremixProvider } from '..';
 import App from '../../app/App';
 import { routes } from '../../app/routes';
 import { Page } from '../types';
@@ -9,9 +11,10 @@ import matchRoute from './matchRoute';
 type Unwrap<T> = T extends Promise<infer U> ? U : T;
 
 export default async function renderApp(
-  url: string
+  url: string,
 ): Promise<() => JSX.Element> {
-  const route = routes.find(x => matchRoute(x.path, url));
+  const urlWithoutQuery = new URL(`https://example.com${url}`).pathname;
+  const route = routes.find(x => matchRoute(x.path, urlWithoutQuery));
 
   if (!route) {
     return { notFound: true } as any;
@@ -20,28 +23,37 @@ export default async function renderApp(
   const routerPage = await route.page();
 
   const page: Unwrap<Page> = {
-    links: () => [],
-    meta: () => ({}),
-    loader: async () => ({ props: {} }),
-    default: () => <h1>404</h1>,
-    ...routerPage,
+    links: routerPage.links || (() => []),
+    meta: routerPage.meta || (() => ({})),
+    loader: routerPage.loader || (async () => ({ props: {} })),
+    default: routerPage.default || (() => <h1>404</h1>),
   };
 
-  const params = exec(url, param(route.path));
+  const params = exec(urlWithoutQuery, param(route.path));
   const data = await page.loader({ params });
   const meta = page.meta(data.props);
   const links = page.links(data.props);
+  const Component = routerPage.default;
 
   const RemixApp = () => (
-    <RemixProvider
+    <PremixProvider
       context={{
         meta,
         links,
         data,
       }}
     >
-      <App Component={page.default} />
-    </RemixProvider>
+      <StaticRouter location={url} context={{}}>
+        <App Component={Component} />
+        {/* <Switch>
+          {routes.map(route => (
+            <Route key={route.path} path={route.path} exact>
+              <App Component={route.component} />
+            </Route>
+          ))}
+        </Switch> */}
+      </StaticRouter>
+    </PremixProvider>
   );
 
   return RemixApp;

@@ -1,21 +1,53 @@
-import 'preact/debug';
-import { hydrate } from 'preact/compat';
-import { RemixProvider } from '../src';
-import { currentPage } from '../src/client';
+import { useEffect } from 'react';
+import ReactDOM from 'react-dom';
+import { BrowserRouter, Route, Switch, useHistory } from 'react-router-dom';
+import { PremixProvider } from '../src';
+import { useFetchRouteData } from '../src/client';
+import matchRoute from '../src/utils/matchRoute';
+import App from './App';
+import { routes } from './routes';
 
-const initialData = (window as any).__INITIAL_DATA__;
+const premixData = document.getElementById('__PREMIX_DATA__');
+const initialData = JSON.parse(premixData.innerHTML);
 
-delete (window as any).__INITIAL_DATA__;
+function HistoryWrapper() {
+  const history = useHistory();
+  const fetchRouteData = useFetchRouteData();
 
-async function main() {
-  const Page = await currentPage();
+  useEffect(() => {
+    const unsubscribe = history.listen(location =>
+      fetchRouteData(location.pathname)
+    );
 
-  hydrate(
-    <RemixProvider context={{ data: initialData }}>
-      <Page />
-    </RemixProvider>,
-    document.getElementById('__remix')
+    return () => unsubscribe();
+  }, []);
+
+  return (
+    <Switch>
+      {routes.map(route => (
+        <Route
+          key={route.path}
+          path={route.path}
+          exact
+          component={route.component}
+        />
+      ))}
+    </Switch>
   );
 }
 
-main();
+async function init() {
+  const route = routes.find(x => matchRoute(x.path, window.location.pathname));
+  await route.page();
+
+  ReactDOM.hydrate(
+    <PremixProvider context={initialData}>
+      <BrowserRouter>
+        <App Component={HistoryWrapper} />
+      </BrowserRouter>
+    </PremixProvider>,
+    document
+  );
+}
+
+init();

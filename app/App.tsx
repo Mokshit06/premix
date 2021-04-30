@@ -1,4 +1,4 @@
-import { Links, Meta, Scripts } from '../src';
+import { Links, LiveReload, Meta, Scripts } from '../src';
 
 export default function App({ Component }) {
   return (
@@ -10,10 +10,11 @@ export default function App({ Component }) {
         <Links />
       </head>
       <body>
-        <div id="__remix">
+        <div id="__premix">
           <Component />
         </div>
         <Scripts />
+        <LiveReload />
       </body>
     </html>
   );

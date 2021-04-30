@@ -7,7 +7,7 @@ app.use(express.static('public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('*', createRequestHandler());
+app.use('/', createRequestHandler());
 
 app.listen(3000, () => {
   console.log('Server started on http://localhost:3000');

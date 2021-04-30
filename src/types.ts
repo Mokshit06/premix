@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { JSX } from 'preact/compat';
+import type { Request, Response } from 'express';
+import type { ReactElement } from 'react';
 
 export interface Meta {
   title?: string;
@@ -25,7 +25,7 @@ export type LoaderFunction<TData = Record<string, any>> = ({
 export type ActionFunction = (request: Request, response: Response) => any;
 
 export type Page = Promise<{
-  default: (props: any) => JSX.Element;
+  default: (props: any) => ReactElement;
   meta?: MetaFunction;
   links?: LinksFunction;
   loader?: LoaderFunction;

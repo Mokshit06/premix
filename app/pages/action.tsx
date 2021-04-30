@@ -1,11 +1,15 @@
+import { useEffect } from 'react';
 import styles from 'url:../styles/action.css';
 import { Form, usePendingFormSubmit, useRouteData } from '../../src';
+import Link from '../../src/link';
 import type {
   ActionFunction,
   LinksFunction,
   LoaderFunction,
   MetaFunction,
 } from '../../src/types';
+import Button from '../components/Button';
+import { prisma } from '../lib/prisma.server';
 
 export const meta: MetaFunction = () => {
   return {
@@ -23,7 +27,6 @@ export const links: LinksFunction = () => {
 };
 
 export const loader: LoaderFunction = async () => {
-  const { prisma } = await import('../lib/prisma');
   const allUsers = await prisma.user.findMany();
 
   return {
@@ -32,8 +35,9 @@ export const loader: LoaderFunction = async () => {
 };
 
 export const action: ActionFunction = async (req, res) => {
-  const { prisma } = await import('../lib/prisma');
   const { name, email } = req.body;
+
+  await new Promise(resolve => setTimeout(resolve, 600));
 
   await prisma.user.create({
     data: {
@@ -51,22 +55,20 @@ export default function Home() {
 
   return (
     <div>
+      <Link href="/">Home</Link>
       <pre>{JSON.stringify(allUsers, null, 2)}</pre>
-      {pendingForm ? (
-        <h1>Creating new user: {pendingForm.name}</h1>
-      ) : (
-        <Form action="/action">
-          <label>
-            Name:
-            <input name="name" />
-          </label>
-          <label>
-            Email:
-            <input name="email" type="email" />
-          </label>
-          <button type="submit">Submit</button>
-        </Form>
-      )}
+      {pendingForm && <h1>Creating new user: {pendingForm.get('name')}</h1>}
+      <Form action="/action">
+        <label>
+          Name:
+          <input name="name" />
+        </label>
+        <label>
+          Email:
+          <input name="email" type="email" />
+        </label>
+        <Button type="submit">Submit</Button>
+      </Form>
     </div>
   );
 }

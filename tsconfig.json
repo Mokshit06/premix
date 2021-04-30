@@ -6,9 +6,11 @@
     "jsx": "preserve",
     "resolveJsonModule": true,
     "lib": [
-      "ES2019"
+      "ES2019",
+      "DOM",
     ],
-    "noEmit": true
+    "noEmit": true,
+    "downlevelIteration": true
   },
   "exclude": [
     "build"

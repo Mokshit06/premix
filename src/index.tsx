@@ -1,39 +1,58 @@
-import {
+import React, {
   createContext,
+  forwardRef,
   Fragment,
-  JSX,
+  ReactNode,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
-} from 'preact/compat';
+} from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 
-const RemixContext = createContext(null);
+const PremixContext = createContext(null);
 const RouteDataContext = createContext(null);
 const PendingFormDataContext = createContext(null);
 
-export function RemixProvider({ context, children }) {
+function ErrorFallback({ error }) {
+  return (
+    <div role="alert">
+      <p>Something went wrong:</p>
+      <pre>{error.message}</pre>
+    </div>
+  );
+}
+
+export function PremixProvider({ context, children }) {
+  const premix = useState(context);
   const data = useState(() => context.data.props);
   const formData = useState(null);
 
   return (
-    <RemixContext.Provider value={context}>
-      <RouteDataContext.Provider value={data}>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <PremixContext.Provider value={premix}>
         <PendingFormDataContext.Provider value={formData}>
-          {children}
+          <RouteDataContext.Provider value={data}>
+            {children}
+          </RouteDataContext.Provider>
         </PendingFormDataContext.Provider>
-      </RouteDataContext.Provider>
-    </RemixContext.Provider>
+      </PremixContext.Provider>
+    </ErrorBoundary>
   );
 }
 
-export const useRemix = () => useContext(RemixContext);
-export const useRouteData = () => useContext(RouteDataContext);
+export const usePremix = () => useContext(PremixContext);
+export const useRouteData = () => {
+  const context = useContext(RouteDataContext);
+
+  if (context == null) throw new Error('useRouteData called outside Context');
+
+  return context;
+};
 const usePendingFormData = () => useContext(PendingFormDataContext);
 
 export function Meta() {
-  const { meta } = useRemix();
+  const [{ meta }] = usePremix();
 
   return (
     <>
@@ -51,7 +70,7 @@ export function Meta() {
 }
 
 export function Links() {
-  const { links } = useRemix();
+  const [{ links }] = usePremix();
 
   return (
     <>
@@ -67,55 +86,97 @@ export function Links() {
 }
 
 export function Scripts() {
-  const remix = useRemix();
+  const [premix] = usePremix();
 
   return (
     <>
       <script
-        dangerouslySetInnerHTML={{
-          __html: `window.__INITIAL_DATA__ = ${JSON.stringify(remix.data)}`,
-        }}
+        id="__PREMIX_DATA__"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(premix) }}
       />
       <script type="module" src="/build/entry-client.js"></script>
     </>
   );
 }
 
-export function Form({ children, action }) {
+export function LiveReload({ url = 'http://localhost:3456' }) {
+  if (process.env.NODE_ENV !== 'development') return null;
+
+  return (
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `
+      const eventSource = new EventSource('${url}/__premix/livereload');
+      console.log('premix: connecting');
+      eventSource.addEventListener('open', () => {
+        console.log('premix: connected');
+      });
+      eventSource.addEventListener('message', e => {
+        console.log(e.data);
+        window.location.reload();
+      });
+    `.trim(),
+      }}
+    />
+  );
+}
+
+function mergeRefs<T = any>(
+  ...refs: Array<React.MutableRefObject<T> | React.LegacyRef<T>>
+): React.RefCallback<T> {
+  return value => {
+    refs.forEach(ref => {
+      if (typeof ref === 'function') {
+        ref(value);
+      } else if (ref != null) {
+        (ref as React.MutableRefObject<T | null>).current = value;
+      }
+    });
+  };
+}
+
+export const Form = forwardRef<
+  HTMLFormElement,
+  { action: string; children: ReactNode }
+>(({ children, action }, ref) => {
   const [, setPendingFormData] = usePendingFormData();
   const formRef = useRef<HTMLFormElement>(null);
 
-  const handleSubmit = async (e: JSX.TargetedEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const fields = Object.entries(formRef.current.elements).filter(x => {
-      return isNaN(x[0] as any);
-    });
-    const formData = Object.fromEntries(
-      fields.map(x => [x[0], (x[1] as HTMLInputElement).value])
-    );
+    const formData = new FormData(formRef.current);
+    const json = Object.fromEntries((formData as any).entries());
 
     setPendingFormData(formData);
 
     const response = await fetch(action, {
       method: 'post',
-      body: JSON.stringify(formData),
+      body: JSON.stringify(json),
       headers: {
         'Content-Type': 'application/json',
       },
     });
+
+    setPendingFormData(null);
 
     const redirectTo = response.url;
     window.location.href = redirectTo;
   };
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit}>
+    <form
+      method="post"
+      action={action}
+      ref={mergeRefs(formRef, ref)}
+      onSubmit={handleSubmit}
+    >
       {children}
     </form>
   );
-}
+});
 
-export function usePendingFormSubmit() {
+export function usePendingFormSubmit(): FormData {
   const [pendingFormData] = usePendingFormData();
 
   return pendingFormData;

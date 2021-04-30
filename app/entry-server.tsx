@@ -1,9 +1,8 @@
-import render from 'preact-render-to-string';
-import { Request } from 'express';
-import { JSX } from 'preact';
+import ReactDOMServer from 'react-dom/server';
+import { ReactElement } from 'react';
 
-export default function handleRequest(App: () => JSX.Element) {
-  const markup = render(<App />);
+export default function handleRequest(App: () => ReactElement) {
+  const markup = ReactDOMServer.renderToString(<App />);
 
   return `<!DOCTYPE html>${markup}`;
 }
