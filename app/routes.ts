@@ -1,6 +1,4 @@
-import { ReactElement } from 'react';
-import { Route } from '../src/types';
-import loadable from '../src/utils/loadable';
+import { makeRoutes } from '../src';
 
 export const routes = makeRoutes([
   {
@@ -16,12 +14,3 @@ export const routes = makeRoutes([
     page: () => import('./pages/$post'),
   },
 ]);
-
-function makeRoutes(
-  routes: (Route & { component?: (props: any) => ReactElement })[]
-) {
-  return routes.map(route => ({
-    ...route,
-    component: route.component || loadable(route.page),
-  }));
-}

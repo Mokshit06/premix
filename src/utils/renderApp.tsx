@@ -1,3 +1,5 @@
+import { Metafile } from 'esbuild';
+import fs from 'fs';
 import { StaticRouter } from 'react-router-dom';
 import param from 'regexparam';
 import { URL } from 'url';
@@ -10,8 +12,42 @@ import matchRoute from './matchRoute';
 
 type Unwrap<T> = T extends Promise<infer U> ? U : T;
 
+let metafile: Metafile;
+let imports: string[];
+
+function getMetaFile(): Metafile {
+  const file = fs.readFileSync('build/meta.json', 'utf8');
+  if (!file) {
+    throw new Error('`build/meta.json` not found. Run `yarn build`');
+  }
+
+  return JSON.parse(file);
+}
+
+function getImports(metafile: Metafile, file: string) {
+  const info = metafile.outputs[file];
+
+  return [
+    ...new Set(
+      info.imports
+        .filter(i => i.kind === 'import-statement')
+        .flatMap(i => {
+          return [
+            i.path.replace(/^public/, ''),
+            ...getImports(metafile, i.path),
+          ];
+        })
+    ),
+  ];
+}
+
+if (process.env.NODE_ENV === 'production') {
+  metafile = getMetaFile();
+  imports = getImports(metafile, 'public/build/entry-client.js');
+}
+
 export default async function renderApp(
-  url: string,
+  url: string
 ): Promise<() => JSX.Element> {
   const urlWithoutQuery = new URL(`https://example.com${url}`).pathname;
   const route = routes.find(x => matchRoute(x.path, urlWithoutQuery));
@@ -35,11 +71,20 @@ export default async function renderApp(
   const links = page.links(data.props);
   const Component = routerPage.default;
 
+  if (process.env.NODE_ENV === 'development') {
+    metafile = getMetaFile();
+    imports = getImports(metafile, 'public/build/entry-client.js');
+  }
+
   const RemixApp = () => (
     <PremixProvider
       context={{
         meta,
-        links,
+        links: [
+          { rel: 'modulepreload', href: '/build/entry-client.js' },
+          ...imports.map(i => ({ rel: 'modulepreload', href: i })),
+          ...links,
+        ],
         data,
       }}
     >

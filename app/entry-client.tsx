@@ -38,7 +38,10 @@ function HistoryWrapper() {
 
 async function init() {
   const route = routes.find(x => matchRoute(x.path, window.location.pathname));
-  await route.page();
+  const { default: Component } = await route.page();
+
+  (window as any).__LOADABLE_CACHE__ = {};
+  (window as any).__LOADABLE_CACHE__[route.page.toString()] = Component;
 
   ReactDOM.hydrate(
     <PremixProvider context={initialData}>

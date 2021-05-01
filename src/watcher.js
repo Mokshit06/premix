@@ -47,9 +47,9 @@ app.get('/__premix/livereload', (req, res) => {
 
   const unsubscribe = observable.subscribe(async value => {
     res.write(`data: ${value}\n\n`);
-    res.end();
-    unsubscribe();
   });
+
+  res.on('close', () => unsubscribe());
 });
 
 app.listen(3456);

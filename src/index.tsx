@@ -2,12 +2,15 @@ import React, {
   createContext,
   forwardRef,
   Fragment,
+  ReactElement,
   ReactNode,
   useContext,
   useRef,
   useState,
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { Route } from './types';
+import loadable from './utils/loadable';
 
 const PremixContext = createContext(null);
 const RouteDataContext = createContext(null);
@@ -71,17 +74,18 @@ export function Meta() {
 export function Links() {
   const [{ links }] = usePremix();
 
-  return (
-    <>
-      <link rel="modulepreload" href="/build/entry-client.js" />
-      {links.map(link => (
-        <Fragment key={link.href}>
+  return links.map(link => (
+    <Fragment key={link.href}>
+      {['preload', 'modulepreload'].includes(link.rel) ? (
+        <link rel={link.rel} as={link.as} href={link.href} />
+      ) : (
+        <>
           <link rel="preload" as="style" href={link.href} media={link.media} />
           <link rel={link.rel} href={link.href} media={link.media} />
-        </Fragment>
-      ))}
-    </>
-  );
+        </>
+      )}
+    </Fragment>
+  ));
 }
 
 export function Scripts() {
@@ -179,4 +183,13 @@ export function usePendingFormSubmit(): FormData {
   const [pendingFormData] = usePendingFormData();
 
   return pendingFormData;
+}
+
+export function makeRoutes(
+  routes: (Route & { component?: (props: any) => ReactElement })[]
+) {
+  return routes.map(route => ({
+    ...route,
+    component: route.component || loadable(route.page),
+  }));
 }
