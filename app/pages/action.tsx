@@ -1,4 +1,5 @@
-import styles from 'url:../styles/action.css';
+import '../styles/style.css';
+import '../styles/action.css';
 import { Form, usePendingFormSubmit, useRouteData } from '../../src';
 import Link from '../../src/link';
 import type {
@@ -14,15 +15,6 @@ export const meta: MetaFunction = () => {
   return {
     title: 'Action',
   };
-};
-
-export const links: LinksFunction = () => {
-  return [
-    {
-      rel: 'stylesheet',
-      href: styles,
-    },
-  ];
 };
 
 export const loader: LoaderFunction = async () => {

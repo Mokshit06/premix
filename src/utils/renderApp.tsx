@@ -1,5 +1,4 @@
 import { Metafile } from 'esbuild';
-import fs from 'fs';
 import { StaticRouter } from 'react-router-dom';
 import param from 'regexparam';
 import { URL } from 'url';
@@ -8,43 +7,32 @@ import App from '../../app/App';
 import { routes } from '../../app/routes';
 import { Page } from '../types';
 import exec from './exec';
+import {
+  getMetaFile,
+  getPageChunk,
+  getScripts,
+  getStylesheetMap,
+} from './extract';
 import matchRoute from './matchRoute';
 
 type Unwrap<T> = T extends Promise<infer U> ? U : T;
 
 let metafile: Metafile;
-let imports: string[];
-
-function getMetaFile(): Metafile {
-  const file = fs.readFileSync('build/meta.json', 'utf8');
-  if (!file) {
-    throw new Error('`build/meta.json` not found. Run `yarn build`');
-  }
-
-  return JSON.parse(file);
-}
-
-function getImports(metafile: Metafile, file: string) {
-  const info = metafile.outputs[file];
-
-  return [
-    ...new Set(
-      info.imports
-        .filter(i => i.kind === 'import-statement')
-        .flatMap(i => {
-          return [
-            i.path.replace(/^public/, ''),
-            ...getImports(metafile, i.path),
-          ];
-        })
-    ),
-  ];
-}
+let scripts: string[];
+let stylesheetMap: Record<string, string[]>;
 
 if (process.env.NODE_ENV === 'production') {
   metafile = getMetaFile();
-  imports = getImports(metafile, 'public/build/entry-client.js');
+  scripts = getScripts(metafile, 'public/build/entry-client.js');
+  stylesheetMap = getStylesheetMap(metafile);
 }
+
+// TODO get this data from file based routing
+const routeFileMap = {
+  '/': 'app/pages/index.tsx',
+  '/:post': 'app/pages/$post.tsx',
+  '/action': 'app/pages/action.tsx',
+};
 
 export default async function renderApp(
   url: string
@@ -55,6 +43,15 @@ export default async function renderApp(
   if (!route) {
     return { notFound: true } as any;
   }
+
+  if (process.env.NODE_ENV === 'development') {
+    metafile = getMetaFile();
+    scripts = getScripts(metafile, 'public/build/entry-client.js');
+    stylesheetMap = getStylesheetMap(metafile);
+  }
+
+  const file: string = routeFileMap[route.path];
+  const chunk = getPageChunk(metafile, file);
 
   const routerPage = await route.page();
 
@@ -71,9 +68,14 @@ export default async function renderApp(
   const links = page.links(data.props);
   const Component = routerPage.default;
 
-  if (process.env.NODE_ENV === 'development') {
-    metafile = getMetaFile();
-    imports = getImports(metafile, 'public/build/entry-client.js');
+  const pageStyles = [];
+
+  for (const [cssFile, pageChunks] of Object.entries(stylesheetMap)) {
+    const url = cssFile.replace(/^public/, '');
+
+    if (pageChunks.some(x => x === chunk)) {
+      pageStyles.push(url);
+    }
   }
 
   const RemixApp = () => (
@@ -82,7 +84,8 @@ export default async function renderApp(
         meta,
         links: [
           { rel: 'modulepreload', href: '/build/entry-client.js' },
-          ...imports.map(i => ({ rel: 'modulepreload', href: i })),
+          ...scripts.map(i => ({ rel: 'modulepreload', href: i })),
+          ...pageStyles.map(style => ({ rel: 'stylesheet', href: style })),
           ...links,
         ],
         data,
@@ -90,13 +93,6 @@ export default async function renderApp(
     >
       <StaticRouter location={url} context={{}}>
         <App Component={Component} />
-        {/* <Switch>
-          {routes.map(route => (
-            <Route key={route.path} path={route.path} exact>
-              <App Component={route.component} />
-            </Route>
-          ))}
-        </Switch> */}
       </StaticRouter>
     </PremixProvider>
   );

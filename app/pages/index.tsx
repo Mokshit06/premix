@@ -1,20 +1,11 @@
-import styles from 'url:../styles/style.css';
 import { useRouteData } from '../../src';
-import { LinksFunction, LoaderFunction, MetaFunction } from '../../src/types';
+import { LoaderFunction, MetaFunction } from '../../src/types';
+import '../styles/style.css';
 
 export const meta: MetaFunction = data => {
   return {
     title: 'Posts',
   };
-};
-
-export const links: LinksFunction = data => {
-  return [
-    {
-      rel: 'stylesheet',
-      href: styles,
-    },
-  ];
 };
 
 export const loader: LoaderFunction = async () => {

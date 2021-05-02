@@ -14,7 +14,7 @@ export default function App({ Component }) {
           <Component />
         </div>
         <Scripts />
-        <LiveReload />
+        <LiveReload url="https://3456.code.mokshitjain.co" />
       </body>
     </html>
   );

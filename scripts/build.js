@@ -1,6 +1,7 @@
 const esbuild = require('esbuild');
 const pkg = require('../package.json');
 const fs = require('fs');
+const { vanillaExtractPlugin } = require('@vanilla-extract/esbuild-plugin');
 
 const imagePlugin = require('../src/plugins/image');
 const urlPlugin = require('../src/plugins/url');
@@ -40,8 +41,18 @@ const commonConfig = {
   inject: ['./src/react-shim.js'],
   bundle: true,
   watch: shouldWatch,
+  chunkNames: 'chunks/[name]-[hash]',
+  banner: {
+    js: `
+/**
+* Built with Premix
+* Learn more at https://github.com/Mokshit06/premix
+*/
+    `.trim(),
+  },
+  entryNames: '[dir]/[name]',
   publicPath: '/build',
-  plugins: [urlPlugin],
+  plugins: [urlPlugin, vanillaExtractPlugin()],
   external: [],
   define: {
     'process.env.NODE_ENV': isProd ? "'production'" : "'development'",

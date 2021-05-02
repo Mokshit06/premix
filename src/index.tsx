@@ -119,6 +119,10 @@ export function LiveReload({ url = 'http://localhost:3456' }) {
         console.log(e.data);
         window.location.reload();
       });
+      eventSource.addEventListener('error', () => {
+        console.log('premix: error');
+        window.location.reload()
+      });      
     `.trim(),
       }}
     />
