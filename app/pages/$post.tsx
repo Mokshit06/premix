@@ -1,7 +1,6 @@
-import '../styles/style.css';
 import { useRouteData } from '../../src';
-import { LinksFunction, LoaderFunction, MetaFunction } from '../../src/types';
-import Button from '../components/Button';
+import { LoaderFunction, MetaFunction } from '../../src/types';
+import '../styles/style.css';
 
 export const meta: MetaFunction = ({ post }) => {
   return {

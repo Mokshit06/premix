@@ -153,16 +153,12 @@ export const Form = forwardRef<
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(formRef.current);
-    const json = Object.fromEntries((formData as any).entries());
 
     setPendingFormData(formData);
 
     const response = await fetch(action, {
       method: 'post',
-      body: JSON.stringify(json),
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      body: new URLSearchParams(formData as any),
     });
 
     setPendingFormData(null);

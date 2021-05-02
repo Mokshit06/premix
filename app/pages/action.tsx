@@ -1,15 +1,14 @@
-import '../styles/style.css';
-import '../styles/action.css';
 import { Form, usePendingFormSubmit, useRouteData } from '../../src';
 import Link from '../../src/link';
 import type {
   ActionFunction,
-  LinksFunction,
   LoaderFunction,
   MetaFunction,
 } from '../../src/types';
 import Button from '../components/Button';
 import { prisma } from '../lib/prisma';
+import '../styles/action.css';
+import '../styles/style.css';
 
 export const meta: MetaFunction = () => {
   return {
