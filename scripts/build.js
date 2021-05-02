@@ -90,6 +90,17 @@ const buildClient = () =>
       serverScriptPlugin,
       ...commonConfig.plugins,
     ],
+    watch: shouldWatch
+      ? {
+          async onRebuild(error, { metafile }) {
+            await fs.promises.writeFile(
+              'build/meta.json',
+              JSON.stringify(metafile),
+              'utf8'
+            );
+          },
+        }
+      : false,
   });
 
 async function build() {

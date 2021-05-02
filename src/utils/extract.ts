@@ -63,13 +63,14 @@ export function getStylesheetMap(metafile: Metafile) {
   const { inputs } = metafile;
   const files = [];
 
-  Object.entries(inputs).forEach(([file, { imports }]) => {
+  Object.keys(inputs).forEach(file => {
     const fileUrl = new URL(`https://example.com/${file}`);
     const isCss = /\.css$/.test(fileUrl.pathname);
+    const isUrlLoaded = /^\/url-file:(.*)\.css$/.test(fileUrl.pathname);
 
-    if (isCss) {
-      files.push(file);
-    }
+    if (!isCss || isUrlLoaded) return;
+
+    files.push(file);
   });
 
   return files
