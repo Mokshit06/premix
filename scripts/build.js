@@ -41,7 +41,7 @@ const commonConfig = {
   inject: ['./src/react-shim.js'],
   bundle: true,
   watch: shouldWatch,
-  chunkNames: 'chunks/[name]-[hash]',
+  chunkNames: 'chunks/chunk.[hash]',
   banner: {
     js: `
 /**
@@ -62,21 +62,24 @@ const commonConfig = {
   treeShaking: true,
 };
 
+/** @type {esbuild.BuildOptions} */
 const clientConfig = {
   ...commonConfig,
   entryPoints: ['./app/entry-client.tsx'],
   platform: 'browser',
   outdir: 'public/build',
   format: 'esm',
+  entryNames: '[dir]/[name].[hash]',
   splitting: true,
   metafile: true,
   plugins: [premixTransformPlugin, serverScriptPlugin, ...commonConfig.plugins],
   watch: shouldWatch
     ? {
-        async onRebuild({ metafile }) {
+        async onRebuild(error, result) {
+          if (error) return;
           await fs.promises.writeFile(
             'build/meta.json',
-            JSON.stringify(metafile),
+            JSON.stringify(result.metafile),
             'utf8'
           );
         },
@@ -84,6 +87,7 @@ const clientConfig = {
     : false,
 };
 
+/** @type {esbuild.BuildOptions} */
 const serverConfig = {
   ...commonConfig,
   entryPoints: ['./server.ts', './prerender.ts'],

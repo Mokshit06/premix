@@ -2,12 +2,14 @@ const EXPORT_NAME_ACTION = 'action';
 const EXPORT_NAME_LOADER = 'loader';
 const EXPORT_NAME_META = 'meta';
 const EXPORT_NAME_LOAD_PATHS = 'loadPaths';
+const EXPORT_NAME_HEADERS = 'headers';
 
 const ssgExports = new Set([
   EXPORT_NAME_LOADER,
   EXPORT_NAME_ACTION,
   EXPORT_NAME_META,
   EXPORT_NAME_LOAD_PATHS,
+  EXPORT_NAME_HEADERS,
 ]);
 
 function isIdentifierReferenced(ident) {

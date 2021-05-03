@@ -25,6 +25,7 @@ interface PremixContextState {
   data: {
     props: any;
   };
+  script: string;
 }
 
 const PremixContext = createContext<
@@ -139,7 +140,7 @@ export function Scripts() {
         type="application/json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(premix) }}
       />
-      <script type="module" src="/build/entry-client.js"></script>
+      <script type="module" src={premix.script}></script>
     </>
   );
 }

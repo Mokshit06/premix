@@ -11,6 +11,7 @@ import {
   getPageChunk,
   getScripts,
   getStylesheetMap,
+  getRootScript,
 } from './extract';
 import matchRoute from './matchRoute';
 
@@ -18,11 +19,13 @@ type Unwrap<T> = T extends Promise<infer U> ? U : T;
 
 let metafile: Metafile;
 let scripts: string[];
+let rootScript: string;
 let stylesheetMap: Record<string, string[]>;
 
 if (process.env.NODE_ENV === 'production') {
   metafile = getMetaFile();
-  scripts = getScripts(metafile, 'public/build/entry-client.js');
+  rootScript = getRootScript(metafile);
+  scripts = getScripts(metafile, rootScript);
   stylesheetMap = getStylesheetMap(metafile);
 }
 
@@ -43,7 +46,8 @@ export default async function renderApp(url: string) {
 
   if (process.env.NODE_ENV === 'development') {
     metafile = getMetaFile();
-    scripts = getScripts(metafile, 'public/build/entry-client.js');
+    rootScript = getRootScript(metafile);
+    scripts = getScripts(metafile, rootScript);
     stylesheetMap = getStylesheetMap(metafile);
   }
 
@@ -57,6 +61,7 @@ export default async function renderApp(url: string) {
     meta: routerPage.meta || (() => ({})),
     loader: routerPage.loader || (async () => ({ props: {} })),
     default: routerPage.default || (() => <h1>404</h1>),
+    headers: routerPage.headers || (() => ({})),
   };
 
   // const params = exec(urlWithoutQuery, param(route.path));
@@ -70,6 +75,7 @@ export default async function renderApp(url: string) {
 
   const data = await page.loader({ params });
   const meta = page.meta(data.props);
+  const headers = page.headers(data.props);
   const Component = routerPage.default;
 
   const pageStyles = [];
@@ -83,10 +89,10 @@ export default async function renderApp(url: string) {
   }
 
   const links = [
-    { rel: 'modulepreload', href: '/build/entry-client.js' },
+    { rel: 'modulepreload', href: rootScript.replace(/^public/, '') },
     ...scripts.map(i => ({ rel: 'modulepreload', href: i })),
     ...pageStyles.map(style => ({ rel: 'stylesheet', href: style })),
-    ...page.links(data.props),
+    // ...page.links(data.props),
   ];
 
   const RemixApp = () => (
@@ -103,5 +109,5 @@ export default async function renderApp(url: string) {
     </PremixProvider>
   );
 
-  return [RemixApp, { links, data, meta, params }];
+  return [RemixApp, { links, data, meta, params, headers }];
 }

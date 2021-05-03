@@ -32,14 +32,17 @@ export function createRequestHandler(): RequestHandler {
   });
 
   router.get('*', async (req, res) => {
-    const [RemixApp] = await renderApp(req.originalUrl);
+    const [RemixApp, { headers }] = await renderApp(req.originalUrl);
 
     if ((RemixApp as any).notFound === true) {
       return res.status(404).send('Page not found');
     }
 
     const html = handleRequest(RemixApp);
-    res.setHeader('content-type', 'text/html');
+
+    Object.entries(headers).forEach(([key, value]) =>
+      res.setHeader(key, value as string)
+    );
     res.send(html);
   });
 

@@ -1,3 +1,4 @@
+import { BuildOptions } from 'esbuild';
 import type { Request, Response } from 'express';
 import type { ReactElement } from 'react';
 
@@ -26,6 +27,9 @@ export type ActionFunction = (request: Request, response: Response) => any;
 export type LoadPathsFunction = () => Promise<{
   paths: { params: Record<string, string> }[];
 }>;
+export type HeadersFunction<TData = any> = (
+  data: TData
+) => Record<string, string>;
 
 export type Page = Promise<{
   default: (props: any) => ReactElement;
@@ -34,9 +38,14 @@ export type Page = Promise<{
   loader?: LoaderFunction;
   action?: ActionFunction;
   loadPaths?: LoadPathsFunction;
+  headers?: HeadersFunction;
 }>;
 
 export interface Route {
   path: string;
   page: () => Page;
+}
+
+export interface PremixConfig {
+  esbuild(config: BuildOptions, options: { isServer: boolean }): BuildOptions;
 }

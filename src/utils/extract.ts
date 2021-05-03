@@ -18,6 +18,16 @@ export function getScripts(metafile: Metafile, file: string) {
   ];
 }
 
+export function getRootScript(metafile: Metafile) {
+  const { outputs } = metafile;
+
+  for (const [name, data] of Object.entries(outputs)) {
+    if (data.entryPoint === 'app/entry-client.tsx') {
+      return name;
+    }
+  }
+}
+
 export function getMetaFile(): Metafile {
   const file = fs.readFileSync('build/meta.json', 'utf8');
   if (!file) {
