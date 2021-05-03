@@ -1,6 +1,7 @@
 import express from 'express';
 import { createRequestHandler } from './src/server';
 import compression from 'compression';
+import chalk from 'chalk';
 
 const app = express();
 
@@ -13,5 +14,5 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/', createRequestHandler());
 
 app.listen(3000, () => {
-  console.log('Server started on http://localhost:3000');
+  console.log(chalk.green`Server started on http://localhost:3000`);
 });
