@@ -95,9 +95,10 @@ export function Meta() {
           <meta name="title" content={meta.title} />
         </>
       )}
-      {Object.entries(meta).map(([name, content]) => (
-        <meta key={name} name={name} content={content} />
-      ))}
+      {Object.entries(meta).map(
+        ([name, content]) =>
+          name !== 'title' && <meta key={name} name={name} content={content} />
+      )}
     </>
   );
 }

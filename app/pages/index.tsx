@@ -1,6 +1,7 @@
 import { useRouteData } from '../../src';
 import { LoaderFunction, MetaFunction } from '../../src/types';
 import '../styles/style.css';
+import Image from 'img:../assets/dummy_image.png?width=500&placeholder';
 
 export const meta: MetaFunction = data => {
   return {
@@ -32,6 +33,7 @@ export default function Home() {
 
   return (
     <>
+      <Image />
       {posts.map(post => (
         <div key={post.id}>
           <a href={`/${post.id}`}>{post.title}</a>

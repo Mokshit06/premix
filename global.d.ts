@@ -4,8 +4,10 @@ declare module 'url:*' {
 }
 
 declare module 'img:*' {
-  const image: {
-    src: string;
-  };
-  export default image;
+  const Image: ({
+    className,
+  }: {
+    className?: string;
+  }) => import('react').ReactElement;
+  export default Image;
 }

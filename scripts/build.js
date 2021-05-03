@@ -1,7 +1,7 @@
 const esbuild = require('esbuild');
 const pkg = require('../package.json');
 const fs = require('fs');
-const { vanillaExtractPlugin } = require('@vanilla-extract/esbuild-plugin');
+const path = require('path');
 
 const imagePlugin = require('../src/plugins/image');
 const urlPlugin = require('../src/plugins/url');
@@ -14,7 +14,7 @@ const shouldWatch = process.env.WATCH === 'true';
 const clientScriptPlugin = {
   name: 'client-script',
   setup(build) {
-    build.onLoad({ filter: /\.client\.(ts|js)$/ }, args => {
+    build.onLoad({ filter: /\.client\.(ts|js)$/ }, () => {
       return {
         contents: `module.exports = {}`,
         loader: 'js',
@@ -27,7 +27,7 @@ const clientScriptPlugin = {
 const serverScriptPlugin = {
   name: 'server-script',
   setup(build) {
-    build.onLoad({ filter: /\.server\.(ts|js)/ }, args => {
+    build.onLoad({ filter: /\.server\.(ts|js)/ }, () => {
       return {
         contents: `module.exports = {}`,
         loader: 'js',
@@ -52,7 +52,7 @@ const commonConfig = {
   },
   entryNames: '[dir]/[name]',
   publicPath: '/build',
-  plugins: [urlPlugin, vanillaExtractPlugin()],
+  plugins: [urlPlugin, imagePlugin],
   external: [],
   define: {
     'process.env.NODE_ENV': isProd ? "'production'" : "'development'",
@@ -62,49 +62,72 @@ const commonConfig = {
   treeShaking: true,
 };
 
-const buildServer = () =>
-  esbuild.build({
-    ...commonConfig,
-    entryPoints: ['./server.ts', './prerender.ts'],
-    platform: 'node',
-    outdir: 'build',
-    external: [
-      ...commonConfig.external,
-      ...Object.keys(pkg.dependencies),
-      ...Object.keys(pkg.devDependencies),
-    ],
-    plugins: [clientScriptPlugin, ...commonConfig.plugins],
-  });
+const clientConfig = {
+  ...commonConfig,
+  entryPoints: ['./app/entry-client.tsx'],
+  platform: 'browser',
+  outdir: 'public/build',
+  format: 'esm',
+  splitting: true,
+  metafile: true,
+  plugins: [premixTransformPlugin, serverScriptPlugin, ...commonConfig.plugins],
+  watch: shouldWatch
+    ? {
+        async onRebuild({ metafile }) {
+          await fs.promises.writeFile(
+            'build/meta.json',
+            JSON.stringify(metafile),
+            'utf8'
+          );
+        },
+      }
+    : false,
+};
 
-const buildClient = () =>
-  esbuild.build({
-    ...commonConfig,
-    entryPoints: ['./app/entry-client.tsx'],
-    platform: 'browser',
-    outdir: 'public/build',
-    format: 'esm',
-    splitting: true,
-    metafile: true,
-    plugins: [
-      premixTransformPlugin,
-      serverScriptPlugin,
-      ...commonConfig.plugins,
-    ],
-    watch: shouldWatch
-      ? {
-          async onRebuild(error, { metafile }) {
-            await fs.promises.writeFile(
-              'build/meta.json',
-              JSON.stringify(metafile),
-              'utf8'
-            );
-          },
-        }
-      : false,
-  });
+const serverConfig = {
+  ...commonConfig,
+  entryPoints: ['./server.ts', './prerender.ts'],
+  platform: 'node',
+  outdir: 'build',
+  external: [
+    ...commonConfig.external,
+    ...Object.keys(pkg.dependencies),
+    ...Object.keys(pkg.devDependencies),
+  ],
+  plugins: [clientScriptPlugin, ...commonConfig.plugins],
+};
+
+function getUserConfig() {
+  let userConfig;
+
+  try {
+    userConfig = require(path.resolve('premix.config.js'));
+  } catch (error) {
+    if (error.code !== 'MODULE_NOT_FOUND') {
+      throw new Error(error);
+    }
+    userConfig = {
+      esbuild: config => config,
+    };
+  }
+
+  return userConfig;
+}
+
+function buildServer(config) {
+  return esbuild.build(config.esbuild(serverConfig, { isServer: true }));
+}
+
+function buildClient(config) {
+  return esbuild.build(config.esbuild(clientConfig, { isServer: false }));
+}
 
 async function build() {
-  const [, { metafile }] = await Promise.all([buildServer(), buildClient()]);
+  const config = getUserConfig();
+  const [, { metafile }] = await Promise.all([
+    buildServer(config),
+    buildClient(config),
+  ]);
   await fs.promises.writeFile(
     'build/meta.json',
     JSON.stringify(metafile),

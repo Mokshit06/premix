@@ -38,30 +38,30 @@ async function prerender() {
 
   await fs.mkdir('out');
 
-  for (const route of routes) {
-    const page = await route.page();
-    if (page.action) {
-      console.log(
-        chalk.yellow`{bold.underline WARNING}: Actions do not work with Prerendering`
-      );
-    }
+  await Promise.all(
+    routes.map(async route => {
+      const page = await route.page();
+      if (page.action) {
+        console.log(
+          chalk.yellow`{bold.underline WARNING}: Actions do not work with Prerendering [${route.path}]`
+        );
+      }
 
-    if (page.loadPaths) {
-      const { paths } = await page.loadPaths();
-      paths.map(path => {
-        const toPath = compile(route.path, { encode: encodeURIComponent });
-        const url = toPath(path.params);
+      if (page.loadPaths) {
+        const { paths } = await page.loadPaths();
+        paths.forEach(path => {
+          const toPath = compile(route.path, { encode: encodeURIComponent });
+          const url = toPath(path.params);
 
-        pages.push(url);
-      });
-    } else {
-      pages.push(route.path);
-    }
-  }
+          pages.push(url);
+        });
+      } else {
+        pages.push(route.path);
+      }
+    })
+  );
 
-  for (const page of pages) {
-    await writeHTMLFile(page);
-  }
+  await Promise.all(pages.map(page => writeHTMLFile(page)));
 
   await copyFolder('public/build', 'out/build');
 }

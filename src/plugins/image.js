@@ -11,9 +11,14 @@ const plugin = {
         args.path.replace(/^img:/, '')
       );
 
+      const { searchParams } = new URL(`https://example.com/${args.path}`);
+
       return {
         path: filePath,
         namespace: 'image',
+        pluginData: {
+          params: searchParams,
+        },
       };
     });
 
@@ -39,45 +44,45 @@ const plugin = {
     build.onLoad({ filter: /.*/, namespace: 'image-blur' }, async args => {
       const { params } = args.pluginData;
       const filePath = params.get('path');
-      const time = Date.now();
 
-      // TODO change width and height to be based on image metadata
-      const height = 60;
-      const width = 80;
+      const transformer = sharp(filePath)
+        .normalise()
+        .modulate({
+          saturation: 1.2,
+          brightness: 1,
+        })
+        .removeAlpha()
+        .resize(30, 30, { fit: 'inside' });
 
-      const buffer = await sharp(filePath)
-        .resize(width, height)
-        .jpeg({ quality: 25 })
-        .blur()
-        .toBuffer();
+      const {
+        data,
+        info: { format },
+      } = await transformer.toBuffer({ resolveWithObject: true });
 
-      console.log(
-        `PLACEHOLDER ${path.parse(filePath).name} in ${Date.now() - time}ms`
-      );
+      const base64 = `data:image/${format};base64,${data.toString('base64')}`;
 
       return {
-        contents: buffer.toString('base64'),
+        contents: base64,
         loader: 'text',
       };
     });
 
     build.onLoad({ filter: /.*/, namespace: 'image-optimize' }, async args => {
       const { params } = args.pluginData;
+      const width = parseNumber(params.get('width'));
       const filePath = params.get('path');
-      const time = Date.now();
 
-      // TODO change width and height to be based on image metadata
-      const height = 1440;
-      const width = 1920;
+      const transformer = sharp(filePath).rotate();
 
-      const buffer = await sharp(filePath)
-        .resize(width, height)
-        .webp({ quality: 70 })
-        .toBuffer();
+      const { width: metaWidth } = await transformer.metadata();
 
-      console.log(
-        `OPTIMIZED ${path.parse(filePath).name} in ${Date.now() - time}ms`
-      );
+      if (metaWidth && width && metaWidth > width) {
+        transformer.resize(width);
+      }
+
+      transformer.webp({ quality: 70 });
+
+      const buffer = await transformer.toBuffer();
 
       return {
         contents: buffer,
@@ -86,22 +91,53 @@ const plugin = {
     });
 
     build.onLoad({ filter: /.*/, namespace: 'image' }, async args => {
-      const rootImage = `optimize:${args.path.replace(
+      const { params } = args.pluginData;
+      const pathname = new URL(`https://example.com${args.path}`).pathname;
+      const height = params.get('height');
+      const width = params.get('width');
+      const rootImage = `optimize:${pathname.replace(
         /\.(jpg|jpeg|png)$/,
         '.webp'
-      )}?path=${encodeURIComponent(args.path)}`;
+      )}?path=${encodeURIComponent(pathname)}&height=${height}&width=${width}`;
+      const shouldGeneratePlaceholder = params.get('placeholder') !== null;
+
+      const transformer = sharp(pathname);
+      const {
+        width: metaWidth,
+        height: metaHeight,
+      } = await transformer.metadata();
+      const aspectRatio = metaWidth / metaHeight;
+      const numberWidth = parseNumber(width);
 
       return {
         contents: `
         import image from "${rootImage}";
-        import placeholder from "${rootImage}&placeholder";
+        ${
+          shouldGeneratePlaceholder
+            ? `import placeholder from "${rootImage}&placeholder";`
+            : ''
+        }
 
-        export default {
-          src: image,
-          placeholder
+        export default function Image({ className }) {
+          return (
+            <img
+              height={${numberWidth ? numberWidth / aspectRatio : metaHeight}}
+              width={${numberWidth ? numberWidth : metaWidth}}
+              src={image}
+              style={${
+                shouldGeneratePlaceholder
+                  ? `{
+                backgroundImage: \`url(\${placeholder})\`,
+                backgroundSize: 'cover',
+              }`
+                  : 'null'
+              }}
+              className={className}
+            />
+          )
         }
         `.trim(),
-        loader: 'js',
+        loader: 'jsx',
         resolveDir: '/',
       };
     });
@@ -109,3 +145,12 @@ const plugin = {
 };
 
 module.exports = plugin;
+
+function parseNumber(number) {
+  const int = parseInt(number, 10);
+  if (isNaN(int)) {
+    return 0;
+  }
+
+  return int;
+}
