@@ -124,6 +124,7 @@ const plugin = {
               height={${numberWidth ? numberWidth / aspectRatio : metaHeight}}
               width={${numberWidth ? numberWidth : metaWidth}}
               src={image}
+              loading="lazy"
               style={${
                 shouldGeneratePlaceholder
                   ? `{
