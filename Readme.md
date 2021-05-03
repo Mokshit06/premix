@@ -29,7 +29,10 @@ Currently there is no CLI for Premix, so you need to clone this repository.
 
 ```js
 import { Form, usePendingFormSubmit, useRouteData } from '../../src';
+// Import server code
 import db from '../fake-db';
+// Premix will automatically code split and add styles to document head
+import './styles.css';
 
 export async function loader() {
   const todos = await db.todos.findMany();
@@ -49,7 +52,7 @@ export async function action(req, res) {
 }
 
 export default function Todos() {
-  const [{ todos }] = useRouteData();
+  const { todos } = useRouteData();
   const pendingFormSubmit = usePendingFormSubmit();
 
   return (

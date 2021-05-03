@@ -8,11 +8,17 @@ export const meta: MetaFunction = data => {
   };
 };
 
+interface Post {
+  title: string;
+  body: string;
+  id: string;
+}
+
 export const loader: LoaderFunction = async () => {
   const res = await fetch(
     'https://jsonplaceholder.typicode.com/posts?_limit=5'
   );
-  const posts = await res.json();
+  const posts = (await res.json()) as Post[];
 
   return {
     props: {
@@ -22,7 +28,7 @@ export const loader: LoaderFunction = async () => {
 };
 
 export default function Home() {
-  const [{ posts }] = useRouteData();
+  const { posts } = useRouteData<{ posts: Post[] }>();
 
   return (
     <>

@@ -1,5 +1,6 @@
 import React, {
   createContext,
+  Dispatch,
   forwardRef,
   Fragment,
   ReactElement,
@@ -12,9 +13,29 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { Route } from './types';
 import loadable from './utils/loadable';
 
-const PremixContext = createContext(null);
-const RouteDataContext = createContext(null);
-const PendingFormDataContext = createContext(null);
+interface PremixContextState {
+  meta: Record<string, string>;
+  links: {
+    rel: string;
+    as?: string;
+    href: string;
+    media?: string;
+    [key: string]: string;
+  }[];
+  data: {
+    props: any;
+  };
+}
+
+const PremixContext = createContext<
+  [PremixContextState, Dispatch<PremixContextState>]
+>(null);
+const PendingLocationContext = createContext<[boolean, Dispatch<boolean>]>(
+  null
+);
+const PendingFormDataContext = createContext<[FormData, Dispatch<FormData>]>(
+  null
+);
 
 function ErrorFallback({ error }) {
   return (
@@ -27,31 +48,41 @@ function ErrorFallback({ error }) {
 
 export function PremixProvider({ context, children }) {
   const premix = useState(context);
-  const data = useState(() => context.data.props);
+  // const data = useState(() => context.data.props);
   const formData = useState(null);
+  const pendingLocation = useState(false);
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <PremixContext.Provider value={premix}>
-        <PendingFormDataContext.Provider value={formData}>
-          <RouteDataContext.Provider value={data}>
+        <PendingLocationContext.Provider value={pendingLocation}>
+          <PendingFormDataContext.Provider value={formData}>
             {children}
-          </RouteDataContext.Provider>
-        </PendingFormDataContext.Provider>
+          </PendingFormDataContext.Provider>
+        </PendingLocationContext.Provider>
       </PremixContext.Provider>
     </ErrorBoundary>
   );
 }
 
 export const usePremix = () => useContext(PremixContext);
-export const useRouteData = () => {
-  const context = useContext(RouteDataContext);
 
-  if (context == null) throw new Error('useRouteData called outside Context');
+const useSetPendingFormSubmit = () => useContext(PendingFormDataContext);
+export function usePendingFormSubmit(): FormData {
+  const [pendingFormData] = useSetPendingFormSubmit();
+  return pendingFormData;
+}
 
-  return context;
-};
-const usePendingFormData = () => useContext(PendingFormDataContext);
+export const useSetPendingLocation = () => useContext(PendingLocationContext);
+export function usePendingLocation() {
+  const [data] = useContext(PendingLocationContext);
+  return data;
+}
+
+export function useRouteData<TRouteData = any>(): TRouteData {
+  const [{ data }] = useContext(PremixContext);
+  return data.props;
+}
 
 export function Meta() {
   const [{ meta }] = usePremix();
@@ -64,9 +95,9 @@ export function Meta() {
           <meta name="title" content={meta.title} />
         </>
       )}
-      {meta.description && (
-        <meta name="description" content={meta.description} />
-      )}
+      {Object.entries(meta).map(([name, content]) => (
+        <meta key={name} name={name} content={content} />
+      ))}
     </>
   );
 }
@@ -74,18 +105,27 @@ export function Meta() {
 export function Links() {
   const [{ links }] = usePremix();
 
-  return links.map(link => (
-    <Fragment key={link.href}>
-      {['preload', 'modulepreload'].includes(link.rel) ? (
-        <link rel={link.rel} as={link.as} href={link.href} />
-      ) : (
-        <>
-          <link rel="preload" as="style" href={link.href} media={link.media} />
-          <link rel={link.rel} href={link.href} media={link.media} />
-        </>
-      )}
-    </Fragment>
-  ));
+  return (
+    <>
+      {links.map(link => (
+        <Fragment key={link.href}>
+          {['preload', 'modulepreload'].includes(link.rel) ? (
+            <link rel={link.rel} as={link.as} href={link.href} />
+          ) : (
+            <>
+              <link
+                rel="preload"
+                as="style"
+                href={link.href}
+                media={link.media}
+              />
+              <link rel={link.rel} href={link.href} media={link.media} />
+            </>
+          )}
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 export function Scripts() {
@@ -147,7 +187,7 @@ export const Form = forwardRef<
   HTMLFormElement,
   { action: string; children: ReactNode }
 >(({ children, action }, ref) => {
-  const [, setPendingFormData] = usePendingFormData();
+  const [, setPendingFormData] = useSetPendingFormSubmit();
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -164,7 +204,10 @@ export const Form = forwardRef<
     setPendingFormData(null);
 
     const redirectTo = response.url;
-    window.location.href = redirectTo;
+
+    if (response.redirected) {
+      window.location.href = redirectTo;
+    }
   };
 
   return (
@@ -178,12 +221,6 @@ export const Form = forwardRef<
     </form>
   );
 });
-
-export function usePendingFormSubmit(): FormData {
-  const [pendingFormData] = usePendingFormData();
-
-  return pendingFormData;
-}
 
 export function makeRoutes(
   routes: (Route & { component?: (props: any) => ReactElement })[]

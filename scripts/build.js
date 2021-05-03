@@ -65,7 +65,7 @@ const commonConfig = {
 const buildServer = () =>
   esbuild.build({
     ...commonConfig,
-    entryPoints: ['./server.ts'],
+    entryPoints: ['./server.ts', './prerender.ts'],
     platform: 'node',
     outdir: 'build',
     external: [

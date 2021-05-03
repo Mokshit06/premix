@@ -81,9 +81,11 @@ export function getStylesheetMap(metafile: Metafile) {
     .reduce((acc, cur) => {
       const [js, css] = cur;
       const filesImported = getFilesImported(metafile, js);
+
       if (filesImported.length === 0) {
         filesImported.push(js);
       }
+
       return {
         ...acc,
         [css]: filesImported,

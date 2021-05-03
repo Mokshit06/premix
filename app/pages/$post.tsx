@@ -1,11 +1,34 @@
 import { useRouteData } from '../../src';
-import { LoaderFunction, MetaFunction } from '../../src/types';
+import {
+  LoaderFunction,
+  LoadPathsFunction,
+  MetaFunction,
+} from '../../src/types';
 import '../styles/style.css';
 
 export const meta: MetaFunction = ({ post }) => {
   return {
     title: post.title,
     description: post.body,
+  };
+};
+
+interface Post {
+  title: string;
+  body: string;
+  id: string;
+}
+
+export const loadPaths: LoadPathsFunction = async () => {
+  const res = await fetch(
+    'https://jsonplaceholder.typicode.com/posts?_limit=5'
+  );
+  const posts = (await res.json()) as Post[];
+
+  return {
+    paths: posts.map(post => ({
+      params: { post: post.id },
+    })),
   };
 };
 
@@ -23,11 +46,11 @@ export const loader: LoaderFunction = async ({ params }) => {
 };
 
 export default function Post() {
-  const [{ post }] = useRouteData();
+  const { post } = useRouteData<{ post: Post }>();
 
   return (
     <>
-      <a href="/">Back</a>
+      <a href="/">Home</a>
       <h2>{post.title}</h2>
       <p>{post.body}</p>
     </>

@@ -1,18 +1,22 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "allowJs": true,
     "checkJs": true,
     "esModuleInterop": true,
     "jsx": "preserve",
     "resolveJsonModule": true,
     "lib": [
-      "ES2019",
+      "ESNext",
       "DOM",
+      "DOM.Iterable"
     ],
     "noEmit": true,
     "downlevelIteration": true
   },
   "exclude": [
-    "build"
+    "build",
+    "public",
+    "node_modules"
   ]
 }

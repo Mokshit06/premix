@@ -23,6 +23,9 @@ export type LoaderFunction<TData = Record<string, any>> = ({
   props: TData;
 }>;
 export type ActionFunction = (request: Request, response: Response) => any;
+export type LoadPathsFunction = () => Promise<{
+  paths: { params: Record<string, string> }[];
+}>;
 
 export type Page = Promise<{
   default: (props: any) => ReactElement;
@@ -30,6 +33,7 @@ export type Page = Promise<{
   links?: LinksFunction;
   loader?: LoaderFunction;
   action?: ActionFunction;
+  loadPaths?: LoadPathsFunction;
 }>;
 
 export interface Route {

@@ -1,12 +1,11 @@
 import { Metafile } from 'esbuild';
-import { StaticRouter } from 'react-router-dom';
-import param from 'regexparam';
+import { match } from 'path-to-regexp';
 import { URL } from 'url';
 import { PremixProvider } from '..';
 import App from '../../app/App';
 import { routes } from '../../app/routes';
+import { StaticRouter } from 'react-router-dom/server';
 import { Page } from '../types';
-import exec from './exec';
 import {
   getMetaFile,
   getPageChunk,
@@ -34,14 +33,12 @@ const routeFileMap = {
   '/action': 'app/pages/action.tsx',
 };
 
-export default async function renderApp(
-  url: string
-): Promise<() => JSX.Element> {
+export default async function renderApp(url: string) {
   const urlWithoutQuery = new URL(`https://example.com${url}`).pathname;
   const route = routes.find(x => matchRoute(x.path, urlWithoutQuery));
 
   if (!route) {
-    return { notFound: true } as any;
+    return [{ notFound: true }] as any;
   }
 
   if (process.env.NODE_ENV === 'development') {
@@ -62,10 +59,17 @@ export default async function renderApp(
     default: routerPage.default || (() => <h1>404</h1>),
   };
 
-  const params = exec(urlWithoutQuery, param(route.path));
+  // const params = exec(urlWithoutQuery, param(route.path));
+  const matchedRoute = match(route.path, { decode: decodeURIComponent })(
+    urlWithoutQuery
+  );
+
+  if (!matchedRoute) return;
+
+  const { params } = matchedRoute;
+
   const data = await page.loader({ params });
   const meta = page.meta(data.props);
-  const links = page.links(data.props);
   const Component = routerPage.default;
 
   const pageStyles = [];
@@ -78,24 +82,26 @@ export default async function renderApp(
     }
   }
 
+  const links = [
+    { rel: 'modulepreload', href: '/build/entry-client.js' },
+    ...scripts.map(i => ({ rel: 'modulepreload', href: i })),
+    ...pageStyles.map(style => ({ rel: 'stylesheet', href: style })),
+    ...page.links(data.props),
+  ];
+
   const RemixApp = () => (
     <PremixProvider
       context={{
         meta,
-        links: [
-          { rel: 'modulepreload', href: '/build/entry-client.js' },
-          ...scripts.map(i => ({ rel: 'modulepreload', href: i })),
-          ...pageStyles.map(style => ({ rel: 'stylesheet', href: style })),
-          ...links,
-        ],
+        links,
         data,
       }}
     >
-      <StaticRouter location={url} context={{}}>
+      <StaticRouter location={url}>
         <App Component={Component} />
       </StaticRouter>
     </PremixProvider>
   );
 
-  return RemixApp;
+  return [RemixApp, { links, data, meta, params }];
 }

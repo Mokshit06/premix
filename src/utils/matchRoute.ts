@@ -1,6 +1,6 @@
-import param from 'regexparam';
+import { pathToRegexp } from 'path-to-regexp';
 
 export default function matchRoute(route: string, toMatch: string) {
-  const routeRegex = param(route);
-  return routeRegex.pattern.test(toMatch);
+  const routeRegex = pathToRegexp(route);
+  return routeRegex.test(toMatch);
 }

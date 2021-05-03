@@ -1,5 +1,4 @@
 import { Form, usePendingFormSubmit, useRouteData } from '../../src';
-import Link from '../../src/link';
 import type {
   ActionFunction,
   LoaderFunction,
@@ -40,12 +39,12 @@ export const action: ActionFunction = async (req, res) => {
 };
 
 export default function ActionPage() {
-  const [{ allUsers }] = useRouteData();
+  const { allUsers } = useRouteData();
   const pendingForm = usePendingFormSubmit();
 
   return (
     <div>
-      <Link href="/">Home</Link>
+      <a href="/">Home</a>
       <pre>{JSON.stringify(allUsers, null, 2)}</pre>
       {pendingForm && <h1>Creating new user: {pendingForm.get('name')}</h1>}
       <Form action="/action">
