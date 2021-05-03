@@ -334,3 +334,27 @@ module.exports = {
   }
 }
 ```
+
+## Differences to Remix
+
+### Main differences
+
+- Premix doesn't support Nested routes. Currently there are no plans to support it as in most of the cases, they create alot of confusion as to which page is rendering on which route.
+- Currently there is no client side router for Premix so each navigation will do a full page reload. The router should be added pretty soon.
+- There is no API in Premix for cookie and session management.
+
+### Features unique to Premix
+
+Preact actually adds a few convenient features that are not supported in Remix:
+
+#### Static Generation
+
+Premix supports both Static Generation and Server-Side rendering out of the box. This means that you can prerender your Premix app into html files and deploy them anywhere you want.
+
+In comparison, Remix only supports Server-Side rendering.
+
+#### Automatic Stylesheet Injection
+
+In Remix, you can only import stylesheets inside the pages which has alot of limitations. For eg. it doesn't support scoped styling, component level CSS, CSS modules or any other styling solution that outputs a CSS file.
+
+Premix statically analyses your CSS imports at build time and creates a map of which stylesheet is being imported on which page and automatically injects them in the `<head />` during rendering.
