@@ -1,5 +1,5 @@
 import { routes } from 'app/routes';
-import renderApp from 'src/utils/renderApp';
+import renderApp from 'src/utils/render-app';
 import { promises as fs } from 'fs';
 import handleRequest from 'app/entry-server';
 import { compile } from 'path-to-regexp';

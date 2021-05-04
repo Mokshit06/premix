@@ -358,3 +358,46 @@ In comparison, Remix only supports Server-Side rendering.
 In Remix, you can only import stylesheets inside the pages which has alot of limitations. For eg. it doesn't support scoped styling, component level CSS, CSS modules or any other styling solution that outputs a CSS file.
 
 Premix statically analyses your CSS imports at build time and creates a map of which stylesheet is being imported on which page and automatically injects them in the `<head />` during rendering.
+
+#### Image Optimization
+
+For convenience, Premix exports a React Component from the image imports rather than an object. Take a look at this component which an image.
+
+```tsx
+// Remix
+import image from 'img:../image.jpg?placeholder';
+
+export default function Home() {
+  return (
+    <div>
+      <img
+        height={image.height}
+        width={image.width}
+        src={image.src}
+        loading="lazy"
+        style={{
+          backgroundImage: image.placeholder,
+          backgroundSize: 'cover',
+        }}
+      />
+    </div>
+  );
+}
+```
+
+In Premix this can be written as:
+
+```tsx
+// Premix
+import Image from 'img:../image.jpg?placeholder';
+
+export default function Home() {
+  return (
+    <div>
+      <Image />
+    </div>
+  );
+}
+```
+
+Both snippets render the exact same thing. It's just a matter of stylistic preference.

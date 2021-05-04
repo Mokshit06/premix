@@ -41,7 +41,7 @@ const commonConfig = {
   inject: ['./src/react-shim.js'],
   bundle: true,
   watch: shouldWatch,
-  chunkNames: 'chunks/chunk.[hash]',
+  chunkNames: 'chunks/[name].[hash]',
   banner: {
     js: `
 /**
@@ -51,15 +51,15 @@ const commonConfig = {
     `.trim(),
   },
   entryNames: '[dir]/[name]',
-  publicPath: '/build',
   plugins: [urlPlugin, imagePlugin],
   external: [],
   define: {
     'process.env.NODE_ENV': isProd ? "'production'" : "'development'",
   },
-  sourcemap: !isProd,
+  sourcemap: true,
   minify: isProd,
   treeShaking: true,
+  publicPath: '/build',
 };
 
 /** @type {esbuild.BuildOptions} */
@@ -92,7 +92,7 @@ const serverConfig = {
   ...commonConfig,
   entryPoints: ['./server.ts', './prerender.ts'],
   platform: 'node',
-  outdir: 'build',
+  outdir: 'build/',
   external: [
     ...commonConfig.external,
     ...Object.keys(pkg.dependencies),

@@ -4,10 +4,17 @@ declare module 'url:*' {
 }
 
 declare module 'img:*' {
-  const Image: ({
+  function Image({
     className,
   }: {
     className?: string;
-  }) => import('react').ReactElement;
+  }): import('react').ReactElement;
   export default Image;
+}
+
+declare interface Window {
+  __LOADABLE_CACHE__: Record<
+    string,
+    (props: any) => import('react').ReactElement
+  >;
 }

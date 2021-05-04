@@ -11,7 +11,7 @@
     "build:prod": "yarn clear && NODE_ENV=production node scripts/build && rm -rf build/*.css build/*.webp",
     "build:dev": "yarn clear && NODE_ENV=development node scripts/build",
     "clear": "rm -rf build public/build",
-    "start": "NODE_ENV=production node build/server",
+    "start": "NODE_ENV=production node --enable-source-maps build/server",
     "type-check": "tsc",
     "prerender": "yarn build && rm -rf out && node build/prerender"
   },

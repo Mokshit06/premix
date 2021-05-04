@@ -1,17 +1,17 @@
 import { Metafile } from 'esbuild';
 import { match } from 'path-to-regexp';
+import { StaticRouter } from 'react-router-dom/server';
 import { URL } from 'url';
 import { PremixProvider } from '..';
 import App from '../../app/App';
 import { routes } from '../../app/routes';
-import { StaticRouter } from 'react-router-dom/server';
 import { Page } from '../types';
 import {
   getMetaFile,
   getPageChunk,
+  getRootScript,
   getScripts,
   getStylesheetMap,
-  getRootScript,
 } from './extract';
 import matchRoute from './matchRoute';
 
@@ -33,7 +33,7 @@ if (process.env.NODE_ENV === 'production') {
 const routeFileMap = {
   '/': 'app/pages/index.tsx',
   '/:post': 'app/pages/$post.tsx',
-  '/action': 'app/pages/action.tsx',
+  '/todos': 'app/pages/todos.tsx',
 };
 
 export default async function renderApp(url: string) {
@@ -88,11 +88,13 @@ export default async function renderApp(url: string) {
     }
   }
 
+  const script = rootScript.replace(/^public/, '');
   const links = [
-    { rel: 'modulepreload', href: rootScript.replace(/^public/, '') },
+    { rel: 'modulepreload', href: script },
+    { rel: 'modulepreload', href: chunk.replace(/^public/, '') },
     ...scripts.map(i => ({ rel: 'modulepreload', href: i })),
     ...pageStyles.map(style => ({ rel: 'stylesheet', href: style })),
-    // ...page.links(data.props),
+    ...page.links(data.props),
   ];
 
   const RemixApp = () => (
@@ -101,6 +103,7 @@ export default async function renderApp(url: string) {
         meta,
         links,
         data,
+        script,
       }}
     >
       <StaticRouter location={url}>
@@ -109,5 +112,15 @@ export default async function renderApp(url: string) {
     </PremixProvider>
   );
 
-  return [RemixApp, { links, data, meta, params, headers }];
+  return [
+    RemixApp,
+    {
+      links,
+      data,
+      meta,
+      params,
+      script,
+      headers,
+    },
+  ];
 }

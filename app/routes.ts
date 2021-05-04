@@ -6,8 +6,8 @@ export const routes = makeRoutes([
     page: () => import('./pages'),
   },
   {
-    path: '/action',
-    page: () => import('./pages/action'),
+    path: '/todos',
+    page: () => import('./pages/todos'),
   },
   {
     path: '/:post',

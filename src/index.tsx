@@ -10,6 +10,8 @@ import React, {
   useState,
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { fetchRouteData } from './client';
 import { Route } from './types';
 import loadable from './utils/loadable';
 
@@ -185,44 +187,83 @@ function mergeRefs<T = any>(
   };
 }
 
-export const Form = forwardRef<
-  HTMLFormElement,
-  { action: string; children: ReactNode }
->(({ children, action }, ref) => {
-  const [, setPendingFormData] = useSetPendingFormSubmit();
-  const formRef = useRef<HTMLFormElement>(null);
+type Method = 'post' | 'put' | 'delete' | 'patch';
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(formRef.current);
+export function useSubmit(action?: string) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [, setPremix] = usePremix();
 
-    setPendingFormData(formData);
+  const pathname = action || location.pathname;
 
-    const response = await fetch(action, {
-      method: 'post',
-      body: new URLSearchParams(formData as any),
+  return async (
+    data: any,
+    {
+      replace = false,
+      method = 'post',
+    }: { replace?: boolean; method?: Method } = {}
+  ) => {
+    const response = await fetch(pathname, {
+      method,
+      body: new URLSearchParams(data),
     });
 
-    setPendingFormData(null);
-
-    const redirectTo = response.url;
+    const redirectTo = new URL(response.url).pathname;
 
     if (response.redirected) {
-      window.location.href = redirectTo;
+      if (redirectTo === window.location.pathname) {
+        const data = await fetchRouteData(redirectTo);
+        setPremix(data);
+      } else {
+        window.location.assign(redirectTo);
+      }
+    } else {
+      console.log(response);
+      if (process.env.NODE_ENV === 'development') {
+        throw new Error('You must redirect to a path from your `actions`');
+      }
     }
   };
+}
 
-  return (
-    <form
-      method="post"
-      action={action}
-      ref={mergeRefs(formRef, ref)}
-      onSubmit={handleSubmit}
-    >
-      {children}
-    </form>
-  );
-});
+export interface FormProps {
+  action: string;
+  children: ReactNode;
+  replace?: boolean;
+  method?: Method;
+}
+
+export const Form = forwardRef<HTMLFormElement, FormProps>(
+  ({ children, action, replace = false, method = 'post' }, ref) => {
+    const [, setPendingFormData] = useSetPendingFormSubmit();
+    const formRef = useRef<HTMLFormElement>(null);
+    const submit = useSubmit(action);
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const formData = new FormData(formRef.current);
+      setPendingFormData(formData);
+
+      await submit(formData, {
+        replace,
+        method,
+      });
+
+      setPendingFormData(null);
+    };
+
+    return (
+      <form
+        method="post"
+        action={action}
+        ref={mergeRefs(formRef, ref)}
+        onSubmit={handleSubmit}
+      >
+        {children}
+      </form>
+    );
+  }
+);
 
 export function makeRoutes(
   routes: (Route & { component?: (props: any) => ReactElement })[]
@@ -231,4 +272,8 @@ export function makeRoutes(
     ...route,
     component: route.component || loadable(route.page),
   }));
+}
+
+function wait(delay: number) {
+  return new Promise(resolve => setTimeout(resolve, delay));
 }

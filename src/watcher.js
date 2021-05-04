@@ -24,7 +24,7 @@ function createObservable(initialValue) {
 const observable = createObservable(null);
 
 nodemon({
-  script: 'build/server.js',
+  exec: 'node --enable-source-maps build/server.js',
   watch: ['build', 'public/build'],
 })
   .on('start', async files => {
