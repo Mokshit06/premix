@@ -1,4 +1,3 @@
-import { routes } from 'app/routes';
 import renderApp from 'src/utils/render-app';
 import { promises as fs } from 'fs';
 import handleRequest from 'app/entry-server';
@@ -6,6 +5,8 @@ import { compile } from 'path-to-regexp';
 import fetch, { Request, Response } from 'node-fetch';
 import path from 'path';
 import chalk from 'chalk';
+
+const routes = globalThis.__PREMIX_MANIFEST__;
 
 global.fetch = fetch as any;
 global.Request = Request as any;

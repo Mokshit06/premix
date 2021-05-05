@@ -3,12 +3,14 @@ const pkg = require('../package.json');
 const fs = require('fs');
 const path = require('path');
 
-const imagePlugin = require('../src/plugins/image');
-const urlPlugin = require('../src/plugins/url');
-const premixTransformPlugin = require('../src/plugins/premix-transform');
+const imagePlugin = require('./plugins/image');
+const urlPlugin = require('./plugins/url');
+const premixTransformPlugin = require('./plugins/premix-transform');
+const { getRoutes } = require('./utils/routes');
 
 const isProd = process.env.NODE_ENV === 'production';
 const shouldWatch = process.env.WATCH === 'true';
+const shouldPrerender = process.env.PRERENDER === 'true';
 
 /** @type {esbuild.Plugin} */
 const clientScriptPlugin = {
@@ -62,14 +64,77 @@ const commonConfig = {
   publicPath: '/build',
 };
 
+const routes = getRoutes();
+
+const entryClient = `
+import ReactDOM from 'react-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { PremixProvider } from '../src';
+import matchRoute from '../src/utils/matchRoute';
+import App from './App';
+import { makeRoutes } from 'src'
+
+globalThis.__PREMIX_MANIFEST__ = makeRoutes([
+  ${routes
+    .map(route => {
+      return `{
+      path: '${route.path}',
+      page: () => import('${route.page}'),
+    }`;
+    })
+    .join(',\n')}
+]);
+
+const routes = globalThis.__PREMIX_MANIFEST__;
+
+const premixData = document.getElementById('__PREMIX_DATA__');
+const initialData = JSON.parse(premixData.innerHTML);
+
+async function init() {
+  const route = routes.find(x => matchRoute(x.path, window.location.pathname));
+  const { default: Component } = await route.page();
+
+  globalThis.__LOADABLE_CACHE__ = {};
+  globalThis.__LOADABLE_CACHE__[route.page.toString()] = Component;
+
+  ReactDOM.hydrate(
+    <PremixProvider context={initialData}>
+      <BrowserRouter>
+        <App
+          Component={() => (
+            <Routes>
+              {routes.map(route => (
+                <Route
+                  key={route.path}
+                  path={route.path}
+                  element={<route.component />}
+                />
+              ))}
+            </Routes>
+          )}
+        />
+      </BrowserRouter>
+    </PremixProvider>,
+    document
+  );
+}
+
+init();
+`;
+
 /** @type {esbuild.BuildOptions} */
 const clientConfig = {
   ...commonConfig,
-  entryPoints: ['./app/entry-client.tsx'],
+  stdin: {
+    contents: entryClient,
+    loader: 'tsx',
+    resolveDir: 'app',
+    sourcefile: 'entry-client.tsx',
+  },
   platform: 'browser',
   outdir: 'public/build',
   format: 'esm',
-  entryNames: '[dir]/[name].[hash]',
+  entryNames: '[dir]/entry-client.[hash]',
   splitting: true,
   metafile: true,
   plugins: [premixTransformPlugin, serverScriptPlugin, ...commonConfig.plugins],
@@ -90,7 +155,29 @@ const clientConfig = {
 /** @type {esbuild.BuildOptions} */
 const serverConfig = {
   ...commonConfig,
-  entryPoints: ['./server.ts', './prerender.ts'],
+  // entryPoints: ['./server.ts', './prerender.ts'],
+  stdin: {
+    contents: `
+    import { makeRoutes } from './src'
+
+    globalThis.__PREMIX_MANIFEST__ = makeRoutes([
+      ${routes
+        .map(route => {
+          return `{
+          path: '${route.path}',
+          page: () => import('${route.page}'),
+          pagePath: '${route.page}'
+        }`;
+        })
+        .join(',\n')}
+    ]);
+
+    require('${shouldPrerender ? './src/prerender' : './server'}');
+    `,
+    loader: 'tsx',
+    resolveDir: '.',
+  },
+  entryNames: `[dir]/${shouldPrerender ? 'prerender' : 'server'}`,
   platform: 'node',
   outdir: 'build/',
   external: [
@@ -128,10 +215,12 @@ function buildClient(config) {
 
 async function build() {
   const config = getUserConfig();
-  const [, { metafile }] = await Promise.all([
-    buildServer(config),
+
+  const [{ metafile }] = await Promise.all([
     buildClient(config),
+    buildServer(config),
   ]);
+
   await fs.promises.writeFile(
     'build/meta.json',
     JSON.stringify(metafile),

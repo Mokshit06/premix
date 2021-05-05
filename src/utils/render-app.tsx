@@ -4,7 +4,6 @@ import { StaticRouter } from 'react-router-dom/server';
 import { URL } from 'url';
 import { PremixProvider } from '..';
 import App from '../../app/App';
-import { routes } from '../../app/routes';
 import { Page } from '../types';
 import {
   getMetaFile,
@@ -29,20 +28,8 @@ if (process.env.NODE_ENV === 'production') {
   stylesheetMap = getStylesheetMap(metafile);
 }
 
-// TODO get this data from file based routing
-const routeFileMap = {
-  '/': 'app/pages/index.tsx',
-  '/:post': 'app/pages/$post.tsx',
-  '/todos': 'app/pages/todos.tsx',
-};
-
 export default async function renderApp(url: string) {
   const urlWithoutQuery = new URL(`https://example.com${url}`).pathname;
-  const route = routes.find(x => matchRoute(x.path, urlWithoutQuery));
-
-  if (!route) {
-    return [{ notFound: true }] as any;
-  }
 
   if (process.env.NODE_ENV === 'development') {
     metafile = getMetaFile();
@@ -51,8 +38,16 @@ export default async function renderApp(url: string) {
     stylesheetMap = getStylesheetMap(metafile);
   }
 
-  const file: string = routeFileMap[route.path];
-  const chunk = getPageChunk(metafile, file);
+  const route = globalThis.__PREMIX_MANIFEST__.find(x =>
+    matchRoute(x.path, urlWithoutQuery)
+  );
+
+  if (!route) {
+    return [{ notFound: true }] as any;
+  }
+
+  const file = route.pagePath;
+  const chunk = getPageChunk(metafile, file) || '';
 
   const routerPage = await route.page();
 

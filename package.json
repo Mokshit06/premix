@@ -4,16 +4,16 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev:server": "node scripts/build && node src/watcher",
+    "dev:server": "node src/build && node src/watcher",
     "dev": "yarn clear && concurrently \"yarn watch\" \"yarn dev:server\"",
-    "watch": "WATCH=true node scripts/build",
+    "watch": "WATCH=true node src/build",
     "build": "yarn build:prod",
-    "build:prod": "yarn clear && NODE_ENV=production node scripts/build && rm -rf build/*.css build/*.webp",
-    "build:dev": "yarn clear && NODE_ENV=development node scripts/build",
+    "build:prod": "yarn clear && NODE_ENV=production node src/build && rm -rf build/*.css build/*.webp",
+    "build:dev": "yarn clear && NODE_ENV=development node src/build",
     "clear": "rm -rf build public/build",
     "start": "NODE_ENV=production node --enable-source-maps build/server",
     "type-check": "tsc",
-    "prerender": "yarn build && rm -rf out && node build/prerender"
+    "prerender": "PRERENDER=true yarn build && rm -rf out && node build/prerender"
   },
   "dependencies": {
     "@prisma/client": "^2.21.2",
@@ -33,6 +33,7 @@
     "sharp": "^0.28.1"
   },
   "devDependencies": {
+    "-": "^0.0.1",
     "@babel/core": "^7.14.0",
     "@babel/preset-typescript": "^7.13.0",
     "@types/babel__core": "^7.1.14",
@@ -45,6 +46,7 @@
     "@types/sharp": "^0.28.0",
     "@typescript-eslint/eslint-plugin": "^4.22.0",
     "@typescript-eslint/parser": "^4.22.0",
+    "babel-plugin-preval": "^5.0.0",
     "babel-plugin-remove-unused-import": "^2.1.1",
     "chalk": "^4.1.1",
     "chokidar": "^3.5.1",

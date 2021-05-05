@@ -2,7 +2,7 @@
 
 ## Routing
 
-In Premix, a page is a React Component exported from a .js, .jsx, .ts, or .tsx file in the pages directory. Each page is associated with a route based on its path in `app/routes.ts`;
+In Premix, a page is a React Component exported from a .js, .jsx, .ts, or .tsx file in the pages directory. Each page is associated with a route based on its name in `pages` directory.
 
 **Example**: If you create `pages/about.js` that exports a React component like below, it will be accessible at `/about`.
 
@@ -12,16 +12,6 @@ function About() {
 }
 
 export default About;
-```
-
-```js
-export const routes = makeRoutes([
-  ...,
-  {
-    path: '/about',
-    page: () => import('./pages/about')
-  }
-])
 ```
 
 ### Dynamic Routing

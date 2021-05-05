@@ -1,11 +1,12 @@
 import { RequestHandler, Router } from 'express';
 import fetch from 'node-fetch';
 import handleRequest from '../app/entry-server';
-import { routes } from '../app/routes';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/render-app';
 
 global.fetch = fetch as any;
+
+const routes = globalThis.__PREMIX_MANIFEST__;
 
 export function createRequestHandler(): RequestHandler {
   const router = Router();
@@ -54,6 +55,8 @@ export function createRequestHandler(): RequestHandler {
     if (!route) {
       return res.status(404).send('Page not found');
     }
+
+    console.log(route);
 
     const { action } = await route.page();
 

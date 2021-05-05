@@ -22,7 +22,6 @@ export const loader: LoaderFunction = async () => {
 };
 
 export const action: ActionFunction = async (req, res) => {
-  console.log(req.method);
   switch (req.method) {
     case 'POST': {
       await prisma.todo.create({
@@ -45,7 +44,7 @@ export const action: ActionFunction = async (req, res) => {
     }
   }
 
-  res.redirect(303, '/');
+  res.redirect(303, '/todos');
 };
 
 export default function ActionPage() {
@@ -60,11 +59,15 @@ export default function ActionPage() {
     }
   }, [pendingFormSubmit]);
 
+  useEffect(() => {
+    console.log(todos);
+  }, [todos]);
+
   return (
     <main>
       <h2>Todos</h2>
       <ul>
-        {todos.map(todo => (
+        {(todos || []).map(todo => (
           <li key={todo.id}>
             <input
               type="checkbox"
