@@ -19,7 +19,7 @@ export const routes = makeRoutes([
   ...,
   {
     path: '/about',
-    page: () => import('/pages/about')
+    page: () => import('./pages/about')
   }
 ])
 ```
@@ -32,7 +32,7 @@ Premix supports pages with dynamic routes. For example, if you set the `path` to
 
 Premix has two functions for data fetching:
 
-- `loader` (Hybrid): Fetch data at build time.
+- `loader` (Hybrid): Fetch data at build time or on each request.
 - `loadPaths` (Static Generation): Specify dynamic routes to pre-render pages based on data.
 
 ### `loadPaths` (Static Generation)
@@ -304,7 +304,7 @@ Premix starts up a dev server during development that listens for the changes ma
 
 Premix has built-in support for Code Splitting on per page basis. This means that each page will be code split into its own Javascript bundle during the build process. These will be lazy loaded and preloaded in the html file.
 
-### `dynamic`
+### `loadable`
 
 You can also set your own breakpoints for code splitting React components using `loadable` provided by Premix.
 Currently it doesn't work with Server-Side Rendering.
@@ -349,7 +349,7 @@ Preact actually adds a few convenient features that are not supported in Remix:
 
 #### Static Generation
 
-Premix supports both Static Generation and Server-Side rendering out of the box. This means that you can prerender your Premix app into html files and deploy them anywhere you want.
+Premix supports both Static Generation and Server-Side rendering out of the box. This means that you can prerender your Premix app into html files and deploy it anywhere you want.
 
 In comparison, Remix only supports Server-Side rendering.
 
@@ -361,7 +361,7 @@ Premix statically analyses your CSS imports at build time and creates a map of w
 
 #### Image Optimization
 
-For convenience, Premix exports a React Component from the image imports rather than an object. Take a look at this component which an image.
+For convenience, Premix exports a React Component from the image imports rather than an object. Take a look at this component which renders an image.
 
 ```tsx
 // Remix
