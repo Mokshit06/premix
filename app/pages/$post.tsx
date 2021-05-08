@@ -1,10 +1,11 @@
-import { useRouteData } from '../../src';
+import { useRouteData } from '@premix/core';
 import {
   LoaderFunction,
   LoadPathsFunction,
   MetaFunction,
-} from '../../src/types';
+} from '@premix/core/types';
 import '../styles/style.css';
+import { Link } from '@premix/core/router';
 
 export const meta: MetaFunction = ({ post }) => {
   return {
@@ -50,7 +51,7 @@ export default function Post() {
 
   return (
     <>
-      <a href="/">Home</a>
+      <Link href="/">Home</Link>
       <h2>{post.title}</h2>
       <p>{post.body}</p>
     </>

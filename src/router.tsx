@@ -1,73 +1,208 @@
-import { useRef } from 'react';
 import {
-  NavLink,
-  useLocation,
-  useNavigate,
-  NavLinkProps,
-  useInRouterContext,
+  BrowserHistory,
+  createBrowserHistory,
+  parsePath,
+  Location,
+  PartialLocation,
+  Action,
+  createPath,
+  To,
+} from 'history';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  Router,
+  Link as ReactRouterLink,
+  LinkProps as ReactRouterLinkProps,
+  useLocation as useReactRouterLocation,
 } from 'react-router-dom';
-import { usePremix, useSetPendingLocation } from 'src';
+import { useSetPendingLocation, useSetPendingFormSubmit } from 'src';
 import { fetchRouteData } from './client';
 
-function isModifiedEvent(event: React.MouseEvent) {
-  return !!(event.metaKey || event.altKey || event.ctrlKey || event.shiftKey);
+interface PremixState {
+  meta: Record<string, string>;
+  links: {
+    rel: string;
+    as?: string;
+    href: string;
+    media?: string;
+    [key: string]: string;
+  }[];
+  data: {
+    props: any;
+  };
+  script: string;
 }
 
-export function Link({
-  replace = false,
-  ...props
-}: NavLinkProps & {
-  replace?: boolean;
-}) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [, setPremix] = usePremix();
-  const [, setPendingLocation] = useSetPendingLocation();
-  const isFetched = useRef(false);
-  const routeData = useRef(null);
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-  const handleFetch = async () => {
-    // if (isFetched.current) return;
-    // console.log('FETCHING');
-    // const data = await fetchRouteData(
-    //   typeof props.to === 'string' ? props.to : props.to.pathname
-    // );
-    // console.log('DONE FETCHING');
-    // console.log({ data });
-    // routeData.current = data;
-    // isFetched.current = true;
-  };
+export * from 'react-router-dom';
 
-  const handleClick: React.MouseEventHandler<HTMLAnchorElement> = async e => {
-    if (props.onClick) props.onClick(e);
+export function useLocation() {
+  return useReactRouterLocation() as Location<PremixState>;
+}
 
-    if (
-      !e.defaultPrevented && // onClick prevented default
-      e.button === 0 && // ignore right clicks
-      !props.target && // let browser handle "target=_blank" etc.
-      !isModifiedEvent(e) // ignore clicks with modifier keys
-    ) {
-      // e.preventDefault();
-      // setPendingLocation(true);
-      // await handleFetch();
-      // navigate(props.to);
-      // setPremix(routeData.current);
-      // setPendingLocation(false);
-    }
+export interface LinkProps extends Omit<ReactRouterLinkProps, 'to'> {
+  href: string;
+}
+
+export function Link({ href, ...props }: LinkProps) {
+  const fetchedData = useRef(false);
+
+  const prefetch = async () => {
+    if (fetchedData.current) return;
+    await fetchRouteData(href);
+    fetchedData.current = true;
   };
 
   return (
-    <NavLink
+    <ReactRouterLink
+      to={href}
       {...props}
-      onMouseOver={e => {
-        props.onMouseOver && props.onMouseOver(e);
-        handleFetch();
-      }}
-      onTouchStart={e => {
+      onTouchStart={async e => {
+        await prefetch();
         props.onTouchStart && props.onTouchStart(e);
-        handleFetch();
       }}
-      onClick={handleClick}
+      onMouseOver={async e => {
+        await prefetch();
+        props.onMouseOver && props.onMouseOver(e);
+      }}
+    />
+  );
+}
+
+export function PremixBrowserRouter({
+  children,
+  value,
+}: {
+  children: React.ReactNode;
+  value: any;
+}) {
+  const [, setPendingLocation] = useSetPendingLocation();
+  const [, setPendingFormSubmit] = useSetPendingFormSubmit();
+  const historyRef = useRef<BrowserHistory>();
+
+  if (historyRef.current == null) {
+    const browserHistory = createBrowserHistory({ window });
+
+    historyRef.current = {
+      ...browserHistory,
+      location: {
+        ...browserHistory.location,
+        state: value,
+      },
+    };
+  }
+
+  const history = historyRef.current;
+
+  const [state, setState] = useState({
+    action: history.action,
+    location: history.location,
+  });
+
+  useIsomorphicLayoutEffect(() => {
+    return history.listen(async update => {
+      setPendingLocation(true);
+      const data = await fetchRouteData(update.location.pathname);
+
+      setState({
+        ...update,
+        location: {
+          ...update.location,
+          state: data,
+        },
+      });
+      setPendingLocation(false);
+      setPendingFormSubmit(null);
+    });
+  }, [history]);
+
+  return (
+    <Router
+      children={children}
+      action={state.action}
+      location={state.location}
+      navigator={history}
+    />
+  );
+}
+
+export function PremixServerRouter({
+  children,
+  value,
+  location: loc,
+}: {
+  children: React.ReactNode;
+  value: any;
+  location: string | PartialLocation;
+}) {
+  if (typeof loc === 'string') {
+    loc = parsePath(loc);
+  }
+
+  let action = Action.Pop;
+  let location: Location = {
+    pathname: loc.pathname || '/',
+    search: loc.search || '',
+    hash: loc.hash || '',
+    state: value,
+    key: loc.key || 'default',
+  };
+
+  let staticNavigator = {
+    createHref(to: To) {
+      return typeof to === 'string' ? to : createPath(to);
+    },
+    push(to: To) {
+      throw new Error(
+        `You cannot use navigator.push() on the server because it is a stateless ` +
+          `environment. This error was probably triggered when you did a ` +
+          `\`navigate(${JSON.stringify(to)})\` somewhere in your app.`
+      );
+    },
+    replace(to: To) {
+      throw new Error(
+        `You cannot use navigator.replace() on the server because it is a stateless ` +
+          `environment. This error was probably triggered when you did a ` +
+          `\`navigate(${JSON.stringify(to)}, { replace: true })\` somewhere ` +
+          `in your app.`
+      );
+    },
+    go(delta: number) {
+      throw new Error(
+        `You cannot use navigator.go() on the server because it is a stateless ` +
+          `environment. This error was probably triggered when you did a ` +
+          `\`navigate(${delta})\` somewhere in your app.`
+      );
+    },
+    back() {
+      throw new Error(
+        `You cannot use navigator.back() on the server because it is a stateless ` +
+          `environment.`
+      );
+    },
+    forward() {
+      throw new Error(
+        `You cannot use navigator.forward() on the server because it is a stateless ` +
+          `environment.`
+      );
+    },
+    block() {
+      throw new Error(
+        `You cannot use navigator.block() on the server because it is a stateless ` +
+          `environment.`
+      );
+    },
+  };
+
+  return (
+    <Router
+      children={children}
+      action={action}
+      location={location}
+      navigator={staticNavigator}
+      static={true}
     />
   );
 }

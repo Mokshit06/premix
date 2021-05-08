@@ -46,6 +46,7 @@ export function createRequestHandler(): RequestHandler {
     Object.entries(headers).forEach(([key, value]) =>
       res.setHeader(key, value as string)
     );
+
     res.send(html);
   });
 
@@ -55,8 +56,6 @@ export function createRequestHandler(): RequestHandler {
     if (!route) {
       return res.status(404).send('Page not found');
     }
-
-    console.log(route);
 
     const { action } = await route.page();
 

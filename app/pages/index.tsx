@@ -1,7 +1,8 @@
 import Image from 'img:../assets/dummy_image.png?width=500&placeholder';
-import { useRouteData } from '../../src';
-import { LoaderFunction, MetaFunction } from '../../src/types';
+import { useRouteData } from '@premix/core';
+import { LoaderFunction, MetaFunction } from '@premix/core/types';
 import '../styles/style.css';
+import { Link } from '@premix/core/router';
 
 export const meta: MetaFunction = () => {
   return {
@@ -36,7 +37,7 @@ export default function Home() {
       <Image />
       {posts.map(post => (
         <div key={post.id}>
-          <a href={`/${post.id}`}>{post.title}</a>
+          <Link href={`/${post.id}`}>{post.title}</Link>
         </div>
       ))}
     </>

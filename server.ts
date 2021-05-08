@@ -1,5 +1,5 @@
 import express from 'express';
-import { createRequestHandler } from './src/server';
+import { createRequestHandler } from '@premix/core/server';
 import compression from 'compression';
 import chalk from 'chalk';
 

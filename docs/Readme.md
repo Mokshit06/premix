@@ -18,6 +18,14 @@ export default About;
 
 Premix supports pages with dynamic routes. For example, if you set the `path` to `/posts/:id`, then it will be accessible at `posts/1`, `posts/2`, etc.
 
+### Links
+
+Premix prefetches the route data and resources when you hover or touch on the links so that the data is already available when route transition starts. This makes the app feel faster.
+
+#### `usePendingLocation`
+
+There is also a hook `usePendingLocation` which can be used to see if the transition is taking place.
+
 ## Data fetching
 
 Premix has two functions for data fetching:
@@ -312,7 +320,7 @@ In order to extend the usage of `esbuild`, you can define a function that extend
 ### Example
 
 ```js
-/** @type {import('./src/types').PremixConfig} */
+/** @type {import('@premix/core/types').PremixConfig} */
 module.exports = {
   // `config` is the default Premix configuration for the environment
   // It will be different for server and client
@@ -330,7 +338,6 @@ module.exports = {
 ### Main differences
 
 - Premix doesn't support Nested routes. Currently there are no plans to support it as in most of the cases, they create alot of confusion as to which page is rendering on which route.
-- Currently there is no client side router for Premix so each navigation will do a full page reload. The router should be added pretty soon.
 - There is no API in Premix for cookie and session management.
 
 ### Features unique to Premix

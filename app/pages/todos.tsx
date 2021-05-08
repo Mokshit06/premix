@@ -1,7 +1,12 @@
 import { Todo } from '@prisma/client';
 import { useEffect, useRef } from 'react';
 import { Form, usePendingFormSubmit, useRouteData, useSubmit } from 'src';
-import type { ActionFunction, LoaderFunction, MetaFunction } from 'src/types';
+import { Link } from '@premix/core/router';
+import type {
+  ActionFunction,
+  LoaderFunction,
+  MetaFunction,
+} from '@premix/core/types';
 import Button from '../components/Button';
 import { prisma } from '../lib/prisma';
 import '../styles/action.css';
@@ -59,15 +64,12 @@ export default function ActionPage() {
     }
   }, [pendingFormSubmit]);
 
-  useEffect(() => {
-    console.log(todos);
-  }, [todos]);
-
   return (
     <main>
+      <Link href="/">Home</Link>
       <h2>Todos</h2>
       <ul>
-        {(todos || []).map(todo => (
+        {todos.map(todo => (
           <li key={todo.id}>
             <input
               type="checkbox"
@@ -91,7 +93,7 @@ export default function ActionPage() {
         {pendingFormSubmit && (
           <li>
             <input type="checkbox" disabled />
-            {pendingFormSubmit.get('text')}
+            {pendingFormSubmit.data.get('text')}
           </li>
         )}
       </ul>

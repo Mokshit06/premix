@@ -68,11 +68,10 @@ const routes = getRoutes();
 
 const entryClient = `
 import ReactDOM from 'react-dom';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { PremixProvider } from '../src';
-import matchRoute from '../src/utils/matchRoute';
+import { Route, Routes, PremixBrowserRouter } from '@premix/core/router';
+import { PremixProvider, makeRoutes } from '@premix/core';
+import matchRoute from '@premix/core/utils/matchRoute';
 import App from './App';
-import { makeRoutes } from 'src'
 
 globalThis.__PREMIX_MANIFEST__ = makeRoutes([
   ${routes
@@ -98,8 +97,8 @@ async function init() {
   globalThis.__LOADABLE_CACHE__[route.page.toString()] = Component;
 
   ReactDOM.hydrate(
-    <PremixProvider context={initialData}>
-      <BrowserRouter>
+    <PremixProvider>
+      <PremixBrowserRouter value={initialData}>
         <App
           Component={() => (
             <Routes>
@@ -113,7 +112,7 @@ async function init() {
             </Routes>
           )}
         />
-      </BrowserRouter>
+      </PremixBrowserRouter>
     </PremixProvider>,
     document
   );
@@ -158,7 +157,7 @@ const serverConfig = {
   // entryPoints: ['./server.ts', './prerender.ts'],
   stdin: {
     contents: `
-    import { makeRoutes } from './src'
+    import { makeRoutes } from '@premix/core'
 
     globalThis.__PREMIX_MANIFEST__ = makeRoutes([
       ${routes
@@ -172,7 +171,7 @@ const serverConfig = {
         .join(',\n')}
     ]);
 
-    require('${shouldPrerender ? './src/prerender' : './server'}');
+    require('${shouldPrerender ? '@premix/core/prerender' : './server'}');
     `,
     loader: 'tsx',
     resolveDir: '.',

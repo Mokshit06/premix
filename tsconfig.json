@@ -12,6 +12,14 @@
       "DOM.Iterable"
     ],
     "noEmit": true,
+    "paths": {
+      "@premix/core": [
+        "./src"
+      ],
+      "@premix/core/*": [
+        "./src/*"
+      ]
+    },
     "downlevelIteration": true
   },
   "exclude": [

@@ -1,6 +1,5 @@
 import { Metafile } from 'esbuild';
 import { match } from 'path-to-regexp';
-import { StaticRouter } from 'react-router-dom/server';
 import { URL } from 'url';
 import { PremixProvider } from '..';
 import App from '../../app/App';
@@ -13,6 +12,7 @@ import {
   getStylesheetMap,
 } from './extract';
 import matchRoute from './matchRoute';
+import { PremixServerRouter } from '@premix/core/router';
 
 type Unwrap<T> = T extends Promise<infer U> ? U : T;
 
@@ -93,17 +93,18 @@ export default async function renderApp(url: string) {
   ];
 
   const RemixApp = () => (
-    <PremixProvider
-      context={{
-        meta,
-        links,
-        data,
-        script,
-      }}
-    >
-      <StaticRouter location={url}>
+    <PremixProvider>
+      <PremixServerRouter
+        value={{
+          meta,
+          links,
+          data,
+          script,
+        }}
+        location={url}
+      >
         <App Component={Component} />
-      </StaticRouter>
+      </PremixServerRouter>
     </PremixProvider>
   );
 

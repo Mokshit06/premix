@@ -1,6 +1,6 @@
 const { vanillaExtractPlugin } = require('@vanilla-extract/esbuild-plugin');
 
-/** @type {import('./src/types').PremixConfig} */
+/** @type {import('@premix/core/types').PremixConfig} */
 module.exports = {
   esbuild(config, options) {
     config.plugins.push(vanillaExtractPlugin());

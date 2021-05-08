@@ -1,6 +1,5 @@
 import React, {
   createContext,
-  Dispatch,
   forwardRef,
   Fragment,
   ReactElement,
@@ -10,35 +9,22 @@ import React, {
   useState,
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@premix/core/router';
 import { fetchRouteData } from './client';
 import { Route } from './types';
 import loadable from './utils/loadable';
 
-interface PremixContextState {
-  meta: Record<string, string>;
-  links: {
-    rel: string;
-    as?: string;
-    href: string;
-    media?: string;
-    [key: string]: string;
-  }[];
-  data: {
-    props: any;
-  };
-  script: string;
+interface PendingFormData {
+  method: Method;
+  data: FormData;
 }
 
-const PremixContext = createContext<
-  [PremixContextState, Dispatch<PremixContextState>]
+const PendingLocationContext = createContext<
+  [boolean, React.Dispatch<React.SetStateAction<boolean>>]
 >(null);
-const PendingLocationContext = createContext<[boolean, Dispatch<boolean>]>(
-  null
-);
-const PendingFormDataContext = createContext<[FormData, Dispatch<FormData>]>(
-  null
-);
+const PendingFormDataContext = createContext<
+  [PendingFormData, React.Dispatch<React.SetStateAction<PendingFormData>>]
+>(null);
 
 function ErrorFallback({ error }) {
   return (
@@ -49,29 +35,23 @@ function ErrorFallback({ error }) {
   );
 }
 
-export function PremixProvider({ context, children }) {
-  const premix = useState(context);
-  // const data = useState(() => context.data.props);
-  const formData = useState(null);
+export function PremixProvider({ children }) {
+  const pendingFormData = useState<PendingFormData>(null);
   const pendingLocation = useState(false);
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <PremixContext.Provider value={premix}>
-        <PendingLocationContext.Provider value={pendingLocation}>
-          <PendingFormDataContext.Provider value={formData}>
-            {children}
-          </PendingFormDataContext.Provider>
-        </PendingLocationContext.Provider>
-      </PremixContext.Provider>
+      <PendingLocationContext.Provider value={pendingLocation}>
+        <PendingFormDataContext.Provider value={pendingFormData}>
+          {children}
+        </PendingFormDataContext.Provider>
+      </PendingLocationContext.Provider>
     </ErrorBoundary>
   );
 }
 
-export const usePremix = () => useContext(PremixContext);
-
-const useSetPendingFormSubmit = () => useContext(PendingFormDataContext);
-export function usePendingFormSubmit(): FormData {
+export const useSetPendingFormSubmit = () => useContext(PendingFormDataContext);
+export function usePendingFormSubmit() {
   const [pendingFormData] = useSetPendingFormSubmit();
   return pendingFormData;
 }
@@ -83,12 +63,17 @@ export function usePendingLocation() {
 }
 
 export function useRouteData<TRouteData = any>(): TRouteData {
-  const [{ data }] = useContext(PremixContext);
+  const {
+    state: { data },
+  } = useLocation();
+
   return data.props;
 }
 
 export function Meta() {
-  const [{ meta }] = usePremix();
+  const {
+    state: { meta },
+  } = useLocation();
 
   return (
     <>
@@ -107,7 +92,9 @@ export function Meta() {
 }
 
 export function Links() {
-  const [{ links }] = usePremix();
+  const {
+    state: { links },
+  } = useLocation();
 
   return (
     <>
@@ -133,7 +120,7 @@ export function Links() {
 }
 
 export function Scripts() {
-  const [premix] = usePremix();
+  const { state: premix } = useLocation();
 
   return (
     <>
@@ -192,14 +179,14 @@ type Method = 'post' | 'put' | 'delete' | 'patch';
 export function useSubmit(action?: string) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [, setPremix] = usePremix();
+  // const [, setPremix] = usePremix();
 
   const pathname = action || location.pathname;
 
   return async (
     data: any,
     {
-      replace = false,
+      replace = true,
       method = 'post',
     }: { replace?: boolean; method?: Method } = {}
   ) => {
@@ -211,14 +198,12 @@ export function useSubmit(action?: string) {
     const redirectTo = new URL(response.url).pathname;
 
     if (response.redirected) {
-      if (redirectTo === window.location.pathname) {
-        const data = await fetchRouteData(redirectTo);
-        setPremix(data);
-      } else {
-        window.location.assign(redirectTo);
-      }
+      const data = await fetchRouteData(redirectTo);
+      navigate(redirectTo, {
+        replace,
+        state: data,
+      });
     } else {
-      console.log(response);
       if (process.env.NODE_ENV === 'development') {
         throw new Error('You must redirect to a path from your `actions`');
       }
@@ -234,27 +219,25 @@ export interface FormProps {
 }
 
 export const Form = forwardRef<HTMLFormElement, FormProps>(
-  ({ children, action, replace = false, method = 'post' }, ref) => {
-    const [, setPendingFormData] = useSetPendingFormSubmit();
+  ({ children, action, replace = true, method = 'post' }, ref) => {
+    const [, setPendingFormSubmit] = useSetPendingFormSubmit();
     const formRef = useRef<HTMLFormElement>(null);
     const submit = useSubmit(action);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const formData = new FormData(formRef.current);
-      setPendingFormData(formData);
+      setPendingFormSubmit({ data: formData, method });
 
       await submit(formData, {
         replace,
         method,
       });
-
-      setPendingFormData(null);
     };
 
     return (
       <form
-        method="post"
+        method={method}
         action={action}
         ref={mergeRefs(formRef, ref)}
         onSubmit={handleSubmit}
@@ -272,8 +255,4 @@ export function makeRoutes(
     ...route,
     component: route.component || loadable(route.page),
   }));
-}
-
-function wait(delay: number) {
-  return new Promise(resolve => setTimeout(resolve, delay));
 }

@@ -1,4 +1,4 @@
-import { Links, LiveReload, Meta, Scripts } from '../src';
+import { Links, LiveReload, Meta, Scripts } from '@premix/core';
 
 export default function App({ Component }) {
   return (
