@@ -1,9 +1,12 @@
 {
   "compilerOptions": {
+    "outDir": "dist",
     "baseUrl": ".",
+    "rootDir": "src",
     "allowJs": true,
     "checkJs": true,
     "esModuleInterop": true,
+    "strict": true,
     "jsx": "preserve",
     "resolveJsonModule": true,
     "lib": [
@@ -11,11 +14,12 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "emitDeclarationOnly": true,
+    "declaration": true
   },
   "exclude": [
-    "build",
-    "public",
+    "dist",
     "node_modules"
   ]
 }

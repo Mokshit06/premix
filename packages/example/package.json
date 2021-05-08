@@ -1,0 +1,26 @@
+{
+  "name": "premix-example",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "start": "premix start",
+    "dev": "premix dev",
+    "build": "premix build"
+  },
+  "dependencies": {
+    "@premix/core": "1.0.0",
+    "@prisma/client": "^2.21.2",
+    "@vanilla-extract/css": "^0.4.1",
+    "@vanilla-extract/esbuild-plugin": "^0.2.1",
+    "compression": "^1.7.4",
+    "express": "^4.17.1",
+    "history": "^5.0.0",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.7.0",
+    "prisma": "^2.21.2"
+  }
+}

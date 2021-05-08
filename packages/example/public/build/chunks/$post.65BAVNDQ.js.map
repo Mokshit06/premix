@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../app/pages/$post.tsx"],
+  "sourcesContent": ["import { useRouteData } from '@premix/core';\nimport '../styles/style.css';\nexport default function Post() {\n  const {\n    post\n  } = useRouteData();\n  return <>\n      <a href=\"/\">Home</a>\n      <h2>{post.title}</h2>\n      <p>{post.body}</p>\n    </>;\n}"],
+  "mappings": ";;;;iHAAA,UAA6B,OAEd,YAAgB,CAC7B,GAAM,CACJ,QACE,qBACJ,MAAO,iCACH,gBAAC,IAAD,CAAG,KAAK,KAAI,QACZ,gBAAC,KAAD,KAAK,EAAK,OACV,gBAAC,IAAD,KAAI,EAAK",
+  "names": []
+}

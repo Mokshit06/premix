@@ -1,7 +1,8 @@
 node_modules
-build
+dist
 public/build
 *.db
 *.db-journal
 *.ignore.*
 out
+example/build
