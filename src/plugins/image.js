@@ -52,7 +52,7 @@ const plugin = {
           brightness: 1,
         })
         .removeAlpha()
-        .resize(10, 10, { fit: 'inside' });
+        .resize(30, 30, { fit: 'inside' });
 
       const {
         data,

@@ -136,6 +136,10 @@ const clientConfig = {
   entryNames: '[dir]/entry-client.[hash]',
   splitting: true,
   metafile: true,
+  define: {
+    ...commonConfig.define,
+    'process.env.PREMIX_ENV': '"client"',
+  },
   plugins: [premixTransformPlugin, serverScriptPlugin, ...commonConfig.plugins],
   watch: shouldWatch
     ? {
@@ -178,6 +182,10 @@ const serverConfig = {
   },
   entryNames: `[dir]/${shouldPrerender ? 'prerender' : 'server'}`,
   platform: 'node',
+  define: {
+    ...commonConfig.define,
+    'process.env.PREMIX_ENV': shouldPrerender ? '"prerender"' : '"ssr"',
+  },
   outdir: 'build/',
   external: [
     ...commonConfig.external,
