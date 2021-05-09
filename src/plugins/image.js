@@ -1,3 +1,5 @@
+const chalk = require('chalk');
+
 /** @type {import('esbuild').Plugin} */
 const plugin = {
   name: 'image-loader',
@@ -45,6 +47,8 @@ const plugin = {
       const { params } = args.pluginData;
       const filePath = params.get('path');
 
+      const time = Date.now();
+
       const transformer = sharp(filePath)
         .normalise()
         .modulate({
@@ -61,6 +65,12 @@ const plugin = {
 
       const base64 = `data:image/${format};base64,${data.toString('base64')}`;
 
+      console.log(
+        chalk.blue`{bold Placeholder}: ${
+          path.parse(filePath).base
+        } in {underline ${Date.now() - time}ms}`
+      );
+
       return {
         contents: base64,
         loader: 'text',
@@ -72,6 +82,8 @@ const plugin = {
       const width = parseNumber(params.get('width'));
       const filePath = params.get('path');
 
+      const time = Date.now();
+
       const transformer = sharp(filePath).rotate();
 
       const { width: metaWidth } = await transformer.metadata();
@@ -80,9 +92,13 @@ const plugin = {
         transformer.resize(width);
       }
 
-      transformer.webp({ quality: 70 });
-
       const buffer = await transformer.toBuffer();
+
+      console.log(
+        chalk.cyan`{bold Image}: ${path.parse(filePath).base} in {underline ${
+          Date.now() - time
+        }ms}`
+      );
 
       return {
         contents: buffer,

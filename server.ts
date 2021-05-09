@@ -24,6 +24,8 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/', createRequestHandler());
 
-app.listen(3003, () => {
-  console.log(chalk.green`Server started on http://localhost:3000`);
+const port = process.env.PORT || 3000;
+
+app.listen(port, () => {
+  console.log(chalk.green`Server started on http://localhost:${port}`);
 });
