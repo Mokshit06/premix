@@ -14,11 +14,11 @@ const urlPlugin = {
 
       return {
         path: filePath,
-        namespace: 'url-file',
+        namespace: 'url',
       };
     });
 
-    build.onLoad({ filter: /.*/, namespace: 'url-file' }, async args => {
+    build.onLoad({ filter: /.*/, namespace: 'url' }, async args => {
       const result = await esbuild.build({
         entryPoints: [args.path],
         bundle: true,

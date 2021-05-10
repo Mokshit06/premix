@@ -290,6 +290,18 @@ export default function Home() {
 }
 ```
 
+## Web Workers
+
+A web worker script can be directly imported by prefixing `worker:` to the import. The default export will be a custom worker constructor. The web worker will be inlined as a base64 string in the bundle.
+
+### Example
+
+```js
+import MyWorker from 'worker:./worker';
+
+const worker = new MyWorker();
+```
+
 ## Live Reload
 
 Live Reload is a Premix feature that gives you instantaneous feedback on edits made to your code. Live Reload is enabled by default.

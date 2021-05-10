@@ -5,6 +5,8 @@ const path = require('path');
 
 const imagePlugin = require('./plugins/image');
 const urlPlugin = require('./plugins/url');
+const httpPlugin = require('./plugins/http');
+const workerPlugin = require('./plugins/worker');
 const premixTransformPlugin = require('./plugins/premix-transform');
 const { getRoutes } = require('./utils/routes');
 
@@ -53,7 +55,7 @@ const commonConfig = {
     `.trim(),
   },
   entryNames: '[dir]/[name]',
-  plugins: [urlPlugin, imagePlugin],
+  plugins: [urlPlugin, imagePlugin, httpPlugin, workerPlugin],
   external: [],
   define: {
     'process.env.NODE_ENV': isProd ? "'production'" : "'development'",

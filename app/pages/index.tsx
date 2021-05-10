@@ -3,6 +3,8 @@ import { useRouteData } from '@premix/core';
 import { LoaderFunction, MetaFunction } from '@premix/core/types';
 import '../styles/style.css';
 import { Link } from '@premix/core/router';
+import MyWorker from 'worker:../lib/worker';
+import { useEffect } from 'react';
 
 export const meta: MetaFunction = () => {
   return {
@@ -31,6 +33,11 @@ export const loader: LoaderFunction = async () => {
 
 export default function Home() {
   const { posts } = useRouteData<{ posts: Post[] }>();
+
+  useEffect(() => {
+    const worker = new MyWorker();
+    worker.postMessage('Hello world');
+  });
 
   return (
     <>
