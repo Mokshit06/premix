@@ -11,24 +11,27 @@ const routes = globalThis.__PREMIX_MANIFEST__;
 export function createRequestHandler(): RequestHandler {
   const router = Router();
 
-  router.get('/_premix/data', async (req, res) => {
-    const { href } = req.query;
-
-    if (!href) return res.status(404).send();
+  router.get('/_premix/data/*', async (req, res) => {
+    const href = req.url
+      .replace(/^\/_premix\/data/, '')
+      .replace(/\.json$/, '')
+      .replace(/index$/, '');
 
     try {
-      const [{ notFound }, { headers, ...data }] = await renderApp(
-        href as string
-      );
+      const [{ notFound }, meta] = await renderApp(href as string);
 
       if (notFound === true) {
         return res.status(404).send('Page not found');
       }
 
+      const { headers, ...data } = meta;
+
       res.json(data);
     } catch (error) {
       console.log(error.message);
-      res.status(500).send();
+      res.status(500).send({
+        message: 'Something went wrong',
+      });
     }
   });
 

@@ -36,7 +36,7 @@ const workerPlugin = {
         }
         `,
         loader: 'js',
-        watchFiles: [args.path],
+        watchFiles: [`${args.path}.ts`, `${args.path}.js`],
       };
     });
   },

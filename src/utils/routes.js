@@ -1,16 +1,21 @@
-const fs = require('fs');
+const globby = require('globby');
 
 exports.getRoutes = () => {
-  const routes = fs
-    .readdirSync('app/pages')
+  const routes = globby
+    .sync('app/pages/**/*.{tsx,js,jsx}')
     .sort()
     .reverse()
     .map(page => {
-      const path = page.replace(/\.(tsx|js|jsx)$/, '').replace(/^\$/, ':');
+      const fileName = page.replace(/^app\/pages\//, '');
+      const path = fileName
+        .replace(/\.(tsx|js|jsx)$/, '')
+        .split('/')
+        .map(x => x.replace(/^\$/, ':'))
+        .join('/');
 
       return {
         path: path === 'index' ? '/' : `/${path}`,
-        page: `app/pages/${page}`,
+        page: `app/pages/${fileName}`,
       };
     });
 

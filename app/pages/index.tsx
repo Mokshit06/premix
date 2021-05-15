@@ -44,7 +44,7 @@ export default function Home() {
       <Image />
       {posts.map(post => (
         <div key={post.id}>
-          <Link href={`/${post.id}`}>{post.title}</Link>
+          <Link href={`/posts/${post.id}`}>{post.title}</Link>
         </div>
       ))}
     </>

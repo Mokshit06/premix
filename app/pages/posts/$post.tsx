@@ -4,7 +4,7 @@ import {
   LoadPathsFunction,
   MetaFunction,
 } from '@premix/core/types';
-import '../styles/style.css';
+import '../../styles/style.css';
 import { Link } from '@premix/core/router';
 
 export const meta: MetaFunction = ({ post }) => {

@@ -64,6 +64,9 @@ const commonConfig = {
   minify: isProd,
   treeShaking: true,
   publicPath: '/build',
+  loader: {
+    '.js': 'jsx',
+  },
 };
 
 const routes = getRoutes();

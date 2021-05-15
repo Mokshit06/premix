@@ -345,10 +345,6 @@ module.exports = {
 }
 ```
 
-## Bugs
-
-- Prerendering doesn't work with Static Generation
-
 ## Differences to Remix
 
 ### Main differences

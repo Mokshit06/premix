@@ -103,18 +103,22 @@ export function PremixBrowserRouter({
 
   useIsomorphicLayoutEffect(() => {
     return history.listen(async update => {
-      setPendingLocation(true);
-      const data = await fetchRouteData(update.location.pathname);
+      try {
+        setPendingLocation(true);
+        const data = await fetchRouteData(update.location.pathname);
 
-      setState({
-        ...update,
-        location: {
-          ...update.location,
-          state: data,
-        },
-      });
-      setPendingLocation(false);
-      setPendingFormSubmit(null);
+        setState({
+          ...update,
+          location: {
+            ...update.location,
+            state: data,
+          },
+        });
+        setPendingLocation(false);
+        setPendingFormSubmit(null);
+      } catch (error) {
+        throw new Error(`Error fetching route data: ${error.message}`);
+      }
     });
   }, [history]);
 

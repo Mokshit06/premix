@@ -1,5 +1,5 @@
 import renderApp from '@premix/core/utils/render-app';
-import { promises as fs } from 'fs';
+import fs from 'fs-extra';
 import handleRequest from 'app/entry-server';
 import { compile } from 'path-to-regexp';
 import fetch, { Request, Response } from 'node-fetch';
@@ -13,31 +13,23 @@ global.Request = Request as any;
 global.Response = Response as any;
 
 async function writeHTMLFile(path: string) {
-  const [App] = await renderApp(path);
+  const [App, data] = await renderApp(path);
   const fileName = path === '/' ? '/index.html' : `${path}.html`;
-  fs.writeFile(`out${fileName}`, handleRequest(App), 'utf8');
+  await fs.outputFile(`out${fileName}`, handleRequest(App), 'utf8');
+  await fs.outputJSON(
+    `out/_premix/data${path === '/' ? '/index' : path}.json`,
+    data
+  );
 
   console.log(chalk.green`{underline pre-rendered} ${fileName}`);
 }
 
-async function copyFolder(from: string, to: string) {
-  await fs.mkdir(to);
-  const dir = await fs.readdir(from);
-  const promises = dir.map(async element => {
-    if ((await fs.lstat(path.join(from, element))).isFile()) {
-      await fs.copyFile(path.join(from, element), path.join(to, element));
-    } else {
-      await copyFolder(path.join(from, element), path.join(to, element));
-    }
-  });
-
-  await Promise.all(promises);
-}
-
 async function prerender() {
-  const pages = [];
+  if (await fs.pathExists('out')) {
+    await fs.rmdir('out');
+  }
 
-  await fs.mkdir('out');
+  const pages = [];
 
   await Promise.all(
     routes.map(async route => {
@@ -64,7 +56,7 @@ async function prerender() {
 
   await Promise.all(pages.map(page => writeHTMLFile(page)));
 
-  await copyFolder('public/build', 'out/build');
+  await fs.copy('public', 'out');
 }
 
 prerender()
