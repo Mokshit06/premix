@@ -1,5 +1,6 @@
 import { useRouteData } from '@premix/core';
 import {
+  HeadersFunction,
   LoaderFunction,
   LoadPathsFunction,
   MetaFunction,
@@ -14,6 +15,12 @@ export const meta: MetaFunction = ({ post }) => {
   };
 };
 
+export const headers: HeadersFunction = () => {
+  return {
+    'Cache-Control': 'max-age=60',
+  };
+};
+
 interface Post {
   title: string;
   body: string;
@@ -21,9 +28,7 @@ interface Post {
 }
 
 export const loadPaths: LoadPathsFunction = async () => {
-  const res = await fetch(
-    'https://jsonplaceholder.typicode.com/posts?_limit=5'
-  );
+  const res = await fetch('https://jsonplaceholder.typicode.com/posts');
   const posts = (await res.json()) as Post[];
 
   return {

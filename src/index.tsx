@@ -40,13 +40,15 @@ export function PremixProvider({ children }) {
   const pendingLocation = useState(false);
 
   return (
-    <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <PendingLocationContext.Provider value={pendingLocation}>
-        <PendingFormDataContext.Provider value={pendingFormData}>
-          {children}
-        </PendingFormDataContext.Provider>
-      </PendingLocationContext.Provider>
-    </ErrorBoundary>
+    <React.StrictMode>
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <PendingLocationContext.Provider value={pendingLocation}>
+          <PendingFormDataContext.Provider value={pendingFormData}>
+            {children}
+          </PendingFormDataContext.Provider>
+        </PendingLocationContext.Provider>
+      </ErrorBoundary>
+    </React.StrictMode>
   );
 }
 
@@ -129,6 +131,7 @@ export function Scripts() {
         type="application/json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(premix) }}
       />
+      <script noModule src="/build/nomodule.js"></script>
       <script type="module" src={premix.script}></script>
     </>
   );
@@ -179,8 +182,6 @@ type Method = 'post' | 'put' | 'delete' | 'patch';
 export function useSubmit(action?: string) {
   const location = useLocation();
   const navigate = useNavigate();
-  // const [, setPremix] = usePremix();
-
   const pathname = action || location.pathname;
 
   return async (
@@ -194,6 +195,13 @@ export function useSubmit(action?: string) {
       method,
       body: new URLSearchParams(data),
     });
+
+    if (!response.ok) {
+      navigate(pathname, {
+        replace,
+        state: location.state,
+      });
+    }
 
     const redirectTo = new URL(response.url).pathname;
 

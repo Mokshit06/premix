@@ -144,7 +144,7 @@ const plugin = {
               style={${
                 shouldGeneratePlaceholder
                   ? `{
-                backgroundImage: \`url(\${placeholder})\`,
+                backgroundImage: \`url('\${placeholder}')\`,
                 backgroundSize: 'cover',
               }`
                   : 'null'

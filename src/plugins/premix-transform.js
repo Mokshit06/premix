@@ -1,14 +1,13 @@
 const babel = require('@babel/core');
-const esbuild = require('esbuild');
 
-/** @type {esbuild.Plugin} */
+/** @type {import('esbuild').Plugin} */
 const premixTransform = {
   name: 'proxy-module',
   setup(build) {
     const fs = require('fs');
 
     build.onLoad({ filter: /\/pages\/.*\.(tsx|jsx|js)$/ }, async args => {
-      const contents = await fs.promises.readFile(args.path, 'utf8');
+      const contents = fs.readFileSync(args.path, 'utf8');
       try {
         const transformOne = await babel.transformAsync(contents, {
           filename: 'noop.tsx',

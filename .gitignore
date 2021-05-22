@@ -1,6 +1,5 @@
 node_modules
-build
-public/build
+.premix
 *.db
 *.db-journal
 *.ignore.*

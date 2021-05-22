@@ -1,10 +1,9 @@
 import renderApp from '@premix/core/utils/render-app';
-import fs from 'fs-extra';
 import handleRequest from 'app/entry-server';
-import { compile } from 'path-to-regexp';
-import fetch, { Request, Response } from 'node-fetch';
-import path from 'path';
 import chalk from 'chalk';
+import fs from 'fs-extra';
+import fetch, { Request, Response } from 'node-fetch';
+import { compile } from 'path-to-regexp';
 
 const routes = globalThis.__PREMIX_MANIFEST__;
 
@@ -14,20 +13,19 @@ global.Response = Response as any;
 
 async function writeHTMLFile(path: string) {
   const [App, data] = await renderApp(path);
-  const fileName = path === '/' ? '/index.html' : `${path}.html`;
-  await fs.outputFile(`out${fileName}`, handleRequest(App), 'utf8');
-  await fs.outputJSON(
-    `out/_premix/data${path === '/' ? '/index' : path}.json`,
-    data
-  );
+  const fileName = path === '/' ? '/index' : path;
+  try {
+    fs.outputFileSync(`out${fileName}.html`, handleRequest(App), 'utf8');
+    fs.outputJSONSync(`out/_premix/data${fileName}.json`, data);
 
-  console.log(chalk.green`{underline pre-rendered} ${fileName}`);
+    console.log(chalk.green`{underline pre-rendered} ${fileName}`);
+  } catch (error) {
+    console.log(chalk.red`Error: ${path}`);
+  }
 }
 
 async function prerender() {
-  if (await fs.pathExists('out')) {
-    await fs.rmdir('out');
-  }
+  fs.copySync('.premix/public', 'out');
 
   const pages = [];
 
@@ -54,9 +52,7 @@ async function prerender() {
     })
   );
 
-  await Promise.all(pages.map(page => writeHTMLFile(page)));
-
-  await fs.copy('public', 'out');
+  await Promise.all(pages.map(writeHTMLFile));
 }
 
 prerender()

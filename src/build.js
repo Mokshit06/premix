@@ -1,6 +1,7 @@
+// @ts-check
 const esbuild = require('esbuild');
 const pkg = require('../package.json');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 
 const imagePlugin = require('./plugins/image');
@@ -105,13 +106,13 @@ async function init() {
     <PremixProvider>
       <PremixBrowserRouter value={initialData}>
         <App
-          Component={() => (
+          Component={(props) => (
             <Routes>
               {routes.map(route => (
                 <Route
                   key={route.path}
                   path={route.path}
-                  element={<route.component />}
+                  element={<route.component {...props} />}
                 />
               ))}
             </Routes>
@@ -136,10 +137,7 @@ const clientConfig = {
     sourcefile: 'entry-client.tsx',
   },
   platform: 'browser',
-  outdir: 'public/build',
-  format: 'esm',
-  entryNames: '[dir]/entry-client.[hash]',
-  splitting: true,
+  outdir: '.premix/public/build',
   metafile: true,
   define: {
     ...commonConfig.define,
@@ -150,20 +148,29 @@ const clientConfig = {
     ? {
         async onRebuild(error, result) {
           if (error) return;
-          await fs.promises.writeFile(
-            'build/meta.json',
-            JSON.stringify(result.metafile),
-            'utf8'
-          );
+          fs.outputJsonSync('.premix/build/meta.json', result.metafile);
         },
       }
     : false,
 };
 
 /** @type {esbuild.BuildOptions} */
+const esmConfig = {
+  ...clientConfig,
+  format: 'esm',
+  splitting: true,
+  entryNames: '[dir]/entry-client.[hash]',
+};
+
+/** @type {esbuild.BuildOptions} */
+const noModuleConfig = {
+  ...clientConfig,
+  entryNames: '[dir]/nomodule',
+};
+
+/** @type {esbuild.BuildOptions} */
 const serverConfig = {
   ...commonConfig,
-  // entryPoints: ['./server.ts', './prerender.ts'],
   stdin: {
     contents: `
     import { makeRoutes } from '@premix/core'
@@ -191,7 +198,7 @@ const serverConfig = {
     ...commonConfig.define,
     'process.env.PREMIX_ENV': shouldPrerender ? '"prerender"' : '"ssr"',
   },
-  outdir: 'build/',
+  outdir: '.premix/build/',
   external: [
     ...commonConfig.external,
     ...Object.keys(pkg.dependencies),
@@ -221,23 +228,27 @@ function buildServer(config) {
   return esbuild.build(config.esbuild(serverConfig, { isServer: true }));
 }
 
-function buildClient(config) {
-  return esbuild.build(config.esbuild(clientConfig, { isServer: false }));
+function bundleEsm(config) {
+  return esbuild.build(config.esbuild(esmConfig, { isServer: false }));
+}
+
+function bundleNoModule(config) {
+  return esbuild.build(config.esbuild(noModuleConfig, { isServer: false }));
 }
 
 async function build() {
+  fs.copySync('public', '.premix/public');
+
   const config = getUserConfig();
+  const promises = [bundleEsm(config), buildServer(config)];
 
-  const [{ metafile }] = await Promise.all([
-    buildClient(config),
-    buildServer(config),
-  ]);
+  if (isProd) {
+    promises.push(bundleNoModule(config));
+  }
 
-  await fs.promises.writeFile(
-    'build/meta.json',
-    JSON.stringify(metafile),
-    'utf8'
-  );
+  const [{ metafile }] = await Promise.all(promises);
+
+  fs.outputJsonSync('.premix/build/meta.json', metafile);
 }
 
 build();

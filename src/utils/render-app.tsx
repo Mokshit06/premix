@@ -12,6 +12,7 @@ import {
   getStylesheetMap,
 } from './extract';
 import matchRoute from './matchRoute';
+import React from 'react';
 import { PremixServerRouter } from '@premix/core/router';
 
 type Unwrap<T> = T extends Promise<infer U> ? U : T;
@@ -76,17 +77,17 @@ export default async function renderApp(url: string) {
   const pageStyles = [];
 
   for (const [cssFile, pageChunks] of Object.entries(stylesheetMap)) {
-    const url = cssFile.replace(/^public/, '');
+    const url = cssFile.replace(/^\.premix\/public/, '');
 
     if (pageChunks.some(x => x === chunk)) {
       pageStyles.push(url);
     }
   }
 
-  const script = rootScript.replace(/^public/, '');
+  const script = rootScript.replace(/^\.premix\/public/, '');
   const links = [
     { rel: 'modulepreload', href: script },
-    { rel: 'modulepreload', href: chunk.replace(/^public/, '') },
+    { rel: 'modulepreload', href: chunk.replace(/^\.premix\/public/, '') },
     ...scripts.map(i => ({ rel: 'modulepreload', href: i })),
     ...pageStyles.map(style => ({ rel: 'stylesheet', href: style })),
     ...page.links(data.props),

@@ -37,11 +37,14 @@ export default function Home() {
   useEffect(() => {
     const worker = new MyWorker();
     worker.postMessage('Hello world');
-  });
+  }, []);
 
   return (
     <>
-      <Image />
+      <Link href="/todos">Todos</Link>
+      <div>
+        <Image />
+      </div>
       {posts.map(post => (
         <div key={post.id}>
           <Link href={`/posts/${post.id}`}>{post.title}</Link>

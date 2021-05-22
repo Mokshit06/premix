@@ -10,7 +10,7 @@ export function getScripts(metafile: Metafile, file: string) {
         .filter(i => i.kind === 'import-statement')
         .flatMap(i => {
           return [
-            i.path.replace(/^public/, ''),
+            i.path.replace(/^\.premix\/public/, ''),
             ...getScripts(metafile, i.path),
           ];
         })
@@ -29,7 +29,7 @@ export function getRootScript(metafile: Metafile) {
 }
 
 export function getMetaFile(): Metafile {
-  const file = fs.readFileSync('build/meta.json', 'utf8');
+  const file = fs.readFileSync('.premix/build/meta.json', 'utf8');
   if (!file) {
     throw new Error('`build/meta.json` not found. Run `yarn build`');
   }

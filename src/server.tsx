@@ -1,5 +1,9 @@
-import { RequestHandler, Router } from 'express';
+import compression from 'compression';
+import express, { RequestHandler, Router } from 'express';
+// import fs from 'fs-extra';
+import morgan from 'morgan';
 import fetch from 'node-fetch';
+// import { compile } from 'path-to-regexp';
 import handleRequest from '../app/entry-server';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/render-app';
@@ -10,6 +14,91 @@ const routes = globalThis.__PREMIX_MANIFEST__;
 
 export function createRequestHandler(): RequestHandler {
   const router = Router();
+
+  router.use(compression());
+
+  if (process.env.NODE_ENV === 'development') {
+    router.use(
+      morgan('dev', {
+        skip(req, res) {
+          return req.url.startsWith('/build/');
+        },
+      })
+    );
+  }
+
+  // const revalidateState = {};
+
+  // Promise.all(
+  //   routes.map(async route => {
+  //     const page = await route.page();
+
+  //     if (page.loadPaths) {
+  //       const { paths } = await page.loadPaths();
+  //       paths.forEach(path => {
+  //         const toPath = compile(route.path, { encode: encodeURIComponent });
+  //         const url = toPath(path.params);
+
+  //         revalidateState[url] = Date.now();
+  //       });
+  //     } else {
+  //       revalidateState[route.path] = Date.now();
+  //     }
+  //   })
+  // );
+
+  // router.get('*', async (req, res, next) => {
+  //   if (process.env.NODE_ENV === 'development') return next();
+
+  //   res.on('finish', async () => {
+  //     try {
+  //       const [PremixApp, data] = await renderApp(req.originalUrl);
+
+  //       if (PremixApp.notFound) {
+  //         return;
+  //       }
+
+  //       if (
+  //         !revalidateState[req.originalUrl] ||
+  //         Date.now() - revalidateState[req.originalUrl] > 1_000
+  //       ) {
+  //         const fileName = req.originalUrl === '/' ? '/index' : req.originalUrl;
+
+  //         await fs.outputFile(
+  //           `.premix/public${fileName}.html`,
+  //           handleRequest(PremixApp),
+  //           'utf8'
+  //         );
+  //         await fs.outputJSON(
+  //           `.premix/public/_premix/data${fileName}.json`,
+  //           data
+  //         );
+  //         revalidateState[req.originalUrl] = Date.now();
+  //       } else {
+  //         console.log(Date.now() - revalidateState[req.originalUrl]);
+  //       }
+  //     } catch (error) {}
+  //   });
+
+  //   next();
+  // });
+
+  router.use(
+    express.static('.premix/public', {
+      extensions: ['html'],
+    })
+  );
+
+  if (process.env.NODE_ENV === 'development') {
+    router.use(
+      express.static('public', {
+        extensions: ['html'],
+      })
+    );
+  }
+
+  router.use(express.json());
+  router.use(express.urlencoded({ extended: true }));
 
   router.get('/_premix/data/*', async (req, res) => {
     const href = req.url
@@ -26,6 +115,10 @@ export function createRequestHandler(): RequestHandler {
 
       const { headers, ...data } = meta;
 
+      Object.entries(headers).forEach(([key, value]) =>
+        res.setHeader(key, value as string)
+      );
+
       res.json(data);
     } catch (error) {
       console.log(error.message);
@@ -36,15 +129,15 @@ export function createRequestHandler(): RequestHandler {
   });
 
   router.get('*', async (req, res) => {
-    const [RemixApp, data] = await renderApp(req.originalUrl);
+    const [PremixApp, data] = await renderApp(req.originalUrl);
 
-    if ((RemixApp as any).notFound === true) {
+    if ((PremixApp as any).notFound === true) {
       return res.status(404).send('Page not found');
     }
 
     const { headers } = data;
 
-    const html = handleRequest(RemixApp);
+    const html = handleRequest(PremixApp);
 
     Object.entries(headers).forEach(([key, value]) =>
       res.setHeader(key, value as string)
@@ -64,12 +157,11 @@ export function createRequestHandler(): RequestHandler {
 
     if (!action) return res.status(404).send("Loader doesn't exist");
 
-    await action(req, res);
-    // const redirectTo = await action(req, res);
-
-    // if (req.header('Content-Type') === 'application/json') {
-    //   res.setHeader('x-remix-redirect')
-    // }
+    try {
+      await action(req, res);
+    } catch (error) {
+      res.end();
+    }
   });
 
   return router;

@@ -16,9 +16,7 @@ export interface Link {
 
 export type LinksFunction<TData = any> = (data: TData) => Link[];
 export type MetaFunction<TData = any> = (data: TData) => Meta;
-export type LoaderFunction<TData = Record<string, any>> = ({
-  params,
-}: {
+export type LoaderFunction<TData = Record<string, any>> = (ctx: {
   params: any;
 }) => Promise<{
   props: TData;
@@ -45,6 +43,10 @@ export interface Route {
   path: string;
   page: () => Page;
 }
+
+export type RouteWithComponent = Route & {
+  component?: (props: any) => ReactElement;
+};
 
 export interface PremixConfig {
   esbuild(config: BuildOptions, options: { isServer: boolean }): BuildOptions;

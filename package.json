@@ -6,19 +6,18 @@
   "scripts": {
     "dev:server": "node src/build && node src/watcher",
     "dev": "yarn clear && concurrently \"yarn watch\" \"yarn dev:server\"",
-    "watch": "nodemon --watch app/pages -e tsx,jsx,js --exec WATCH=true node src/build.js",
+    "watch": "nodemon --quiet --watch app/pages -e tsx,jsx,js --exec WATCH=true node src/build.js",
     "build": "yarn build:prod",
-    "build:prod": "yarn clear && NODE_ENV=production node src/build && rm -rf build/*.css build/*.webp",
+    "build:prod": "yarn clear && NODE_ENV=production node src/build && rm -rf .premix/build/*.css .premix/build/*.webp",
     "build:dev": "yarn clear && NODE_ENV=development node src/build",
-    "clear": "rm -rf build public/build",
-    "start": "NODE_ENV=production node --enable-source-maps build/server",
+    "clear": "rm -rf .premix/*",
+    "start": "PORT=3003 NODE_ENV=production node --enable-source-maps .premix/build/server",
     "type-check": "tsc",
-    "prerender": "PRERENDER=true yarn build && rm -rf out && node build/prerender"
+    "prerender": "PRERENDER=true yarn build && rm -rf out && node .premix/build/prerender"
   },
   "dependencies": {
     "@prisma/client": "^2.21.2",
     "@types/node-fetch": "^2.5.10",
-    "@types/react-router-dom": "^5.1.7",
     "@vanilla-extract/css": "^0.4.1",
     "@vanilla-extract/esbuild-plugin": "^0.2.1",
     "esbuild": "^0.11.11",
@@ -35,7 +34,6 @@
     "sharp": "^0.28.1"
   },
   "devDependencies": {
-    "-": "^0.0.1",
     "@babel/core": "^7.14.0",
     "@babel/preset-typescript": "^7.13.0",
     "@types/babel__core": "^7.1.14",
@@ -53,7 +51,6 @@
     "babel-plugin-preval": "^5.0.0",
     "babel-plugin-remove-unused-import": "^2.1.1",
     "chalk": "^4.1.1",
-    "chokidar": "^3.5.1",
     "compression": "^1.7.4",
     "concurrently": "^6.0.2",
     "cors": "^2.8.5",
@@ -65,6 +62,6 @@
     "morgan": "^1.10.0",
     "nodemon": "^2.0.7",
     "prisma": "^2.21.2",
-    "source-map-support": "^0.5.19"
+    "typescript": "^4.2.4"
   }
 }

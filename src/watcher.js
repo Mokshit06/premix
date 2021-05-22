@@ -24,8 +24,9 @@ function createObservable(initialValue) {
 const observable = createObservable(null);
 
 nodemon({
-  exec: 'node --enable-source-maps build/server.js',
-  watch: ['build', 'public/build'],
+  exec: 'node --enable-source-maps .premix/build/server.js',
+  watch: ['.premix/build', '.premix/public/build'],
+  quiet: true,
 })
   .on('start', async files => {
     await new Promise(resolve => setTimeout(resolve, 700));
