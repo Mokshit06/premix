@@ -83,24 +83,23 @@ export function getStylesheetMap(metafile: Metafile) {
     files.push(file);
   });
 
-  return files
-    .map(i => {
-      const inputs = getInputs(metafile, i);
-      return inputs;
-    })
-    .reduce((acc, cur) => {
-      const [js, css] = cur;
-      const filesImported = getFilesImported(metafile, js);
+  return Object.fromEntries(
+    files
+      .map(i => {
+        const inputs = getInputs(metafile, i);
+        return inputs;
+      })
+      .map(input => {
+        const [js, css] = input;
+        const filesImported = getFilesImported(metafile, js);
 
-      if (filesImported.length === 0) {
-        filesImported.push(js);
-      }
+        if (filesImported.length === 0) {
+          filesImported.push(js);
+        }
 
-      return {
-        ...acc,
-        [css]: filesImported,
-      };
-    }, {} as Record<string, string[]>);
+        return [css, filesImported];
+      })
+  );
 }
 
 export function getPageChunk(metafile: Metafile, file: string) {

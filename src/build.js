@@ -198,6 +198,7 @@ const serverConfig = {
     ...commonConfig.define,
     'process.env.PREMIX_ENV': shouldPrerender ? '"prerender"' : '"ssr"',
   },
+  target: 'node12',
   outdir: '.premix/build/',
   external: [
     ...commonConfig.external,

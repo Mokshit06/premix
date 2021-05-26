@@ -6,14 +6,14 @@
   "scripts": {
     "dev:server": "node src/build && node src/watcher",
     "dev": "yarn clear && concurrently \"yarn watch\" \"yarn dev:server\"",
-    "watch": "nodemon --quiet --watch app/pages -e tsx,jsx,js --exec WATCH=true node src/build.js",
+    "watch": "nodemon --quiet --watch app/pages -e tsx,jsx,js --exec cross-env WATCH=true node src/build.js",
     "build": "yarn build:prod",
-    "build:prod": "yarn clear && NODE_ENV=production node src/build && rm -rf .premix/build/*.css .premix/build/*.webp",
-    "build:dev": "yarn clear && NODE_ENV=development node src/build",
+    "build:prod": "yarn clear && cross-env NODE_ENV=production node src/build && rm -rf .premix/build/*.css .premix/build/*.webp",
+    "build:dev": "yarn clear && cross-env NODE_ENV=development node src/build",
     "clear": "rm -rf .premix/*",
-    "start": "PORT=3003 NODE_ENV=production node --enable-source-maps .premix/build/server",
+    "start": "cross-env PORT=3003 NODE_ENV=production node --enable-source-maps .premix/build/server",
     "type-check": "tsc",
-    "prerender": "PRERENDER=true yarn build && rm -rf out && node .premix/build/prerender"
+    "prerender": "cross-env PRERENDER=true yarn build && rm -rf out && node .premix/build/prerender"
   },
   "dependencies": {
     "@prisma/client": "^2.21.2",
@@ -54,6 +54,7 @@
     "compression": "^1.7.4",
     "concurrently": "^6.0.2",
     "cors": "^2.8.5",
+    "cross-env": "^7.0.3",
     "eslint": "^7.25.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^3.4.0",

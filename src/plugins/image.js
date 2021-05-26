@@ -108,7 +108,7 @@ const plugin = {
 
     build.onLoad({ filter: /.*/, namespace: 'image' }, async args => {
       const { params } = args.pluginData;
-      const pathname = new URL(`https://example.com${args.path}`).pathname;
+      const pathname = new URL(args.path, 'https://example.com').pathname;
       const height = params.get('height');
       const width = params.get('width');
       const rootImage = `optimize:${pathname.replace(

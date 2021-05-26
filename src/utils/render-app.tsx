@@ -30,7 +30,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 export default async function renderApp(url: string) {
-  const urlWithoutQuery = new URL(`https://example.com${url}`).pathname;
+  const urlWithoutQuery = new URL(url, 'https://example.com').pathname;
 
   if (process.env.NODE_ENV === 'development') {
     metafile = getMetaFile();
