@@ -354,7 +354,7 @@ module.exports = {
 
 ### Features unique to Premix
 
-Preact actually adds a few convenient features that are not supported in Remix:
+Premix actually adds a few convenient features that are not supported in Remix:
 
 #### Static Generation
 
