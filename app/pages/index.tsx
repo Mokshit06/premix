@@ -1,10 +1,10 @@
-import Image from 'img:../assets/dummy_image.png?width=500&placeholder';
 import { useRouteData } from '@premix/core';
-import { LoaderFunction, MetaFunction } from '@premix/core/types';
-import '../styles/style.css';
 import { Link } from '@premix/core/router';
-import MyWorker from 'worker:../lib/worker';
+import { LoaderFunction, MetaFunction } from '@premix/core/types';
+import Image from 'img:../assets/dummy_image.png?width=500&placeholder';
 import { useEffect } from 'react';
+import MyWorker from 'worker:../lib/worker';
+import '../styles/style.css';
 
 export const meta: MetaFunction = () => {
   return {

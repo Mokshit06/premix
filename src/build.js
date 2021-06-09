@@ -10,6 +10,7 @@ const httpPlugin = require('./plugins/http');
 const workerPlugin = require('./plugins/worker');
 const premixTransformPlugin = require('./plugins/premix-transform');
 const { getRoutes } = require('./utils/routes');
+const chalk = require('chalk');
 
 const isProd = process.env.NODE_ENV === 'production';
 const shouldWatch = process.env.WATCH === 'true';
@@ -73,6 +74,7 @@ const commonConfig = {
 const routes = getRoutes();
 
 const entryClient = `
+import { register, ReactDevOverlay } from '@next/react-dev-overlay/lib/client';
 import ReactDOM from 'react-dom';
 import { Route, Routes, PremixBrowserRouter } from '@premix/core/router';
 import { PremixProvider, makeRoutes } from '@premix/core';
@@ -90,10 +92,13 @@ globalThis.__PREMIX_MANIFEST__ = makeRoutes([
     .join(',\n')}
 ]);
 
+register();
+
 const routes = globalThis.__PREMIX_MANIFEST__;
 
 const premixData = document.getElementById('__PREMIX_DATA__');
 const initialData = JSON.parse(premixData.innerHTML);
+
 
 async function init() {
   const route = routes.find(x => matchRoute(x.path, window.location.pathname));
@@ -107,15 +112,17 @@ async function init() {
       <PremixBrowserRouter value={initialData}>
         <App
           Component={(props) => (
-            <Routes>
-              {routes.map(route => (
-                <Route
-                  key={route.path}
-                  path={route.path}
-                  element={<route.component {...props} />}
-                />
-              ))}
-            </Routes>
+            <ReactDevOverlay>
+              <Routes>
+                {routes.map(route => (
+                  <Route
+                    key={route.path}
+                    path={route.path}
+                    element={<route.component {...props} />}
+                  />
+                ))}
+              </Routes>
+            </ReactDevOverlay>
           )}
         />
       </PremixBrowserRouter>
@@ -163,6 +170,13 @@ const esmConfig = {
 };
 
 /** @type {esbuild.BuildOptions} */
+const errorConfig = {
+  ...clientConfig,
+  stdin: undefined,
+  entryPoints: ['src/error-entry.tsx'],
+};
+
+/** @type {esbuild.BuildOptions} */
 const noModuleConfig = {
   ...clientConfig,
   entryNames: '[dir]/nomodule',
@@ -206,13 +220,30 @@ const serverConfig = {
     ...Object.keys(pkg.devDependencies),
   ],
   plugins: [clientScriptPlugin, ...commonConfig.plugins],
+  sourcemap: 'inline',
 };
+
+/** @param {import('./types').PremixConfig} config */
+function buildServer(config) {
+  return esbuild.build(config.esbuild(serverConfig, { isServer: true }));
+}
+
+/** @param {import('./types').PremixConfig} config */
+function bundleEsm(config) {
+  return esbuild.build(config.esbuild(esmConfig, { isServer: false }));
+}
+
+/** @param {import('./types').PremixConfig} config */
+function bundleNoModule(config) {
+  return esbuild.build(config.esbuild(noModuleConfig, { isServer: false }));
+}
 
 function getUserConfig() {
   let userConfig;
 
   try {
     userConfig = require(path.resolve('premix.config.js'));
+    console.log(chalk.green`Loaded premix.config.js`);
   } catch (error) {
     if (error.code !== 'MODULE_NOT_FOUND') {
       throw new Error(error);
@@ -225,31 +256,25 @@ function getUserConfig() {
   return userConfig;
 }
 
-function buildServer(config) {
-  return esbuild.build(config.esbuild(serverConfig, { isServer: true }));
-}
-
-function bundleEsm(config) {
-  return esbuild.build(config.esbuild(esmConfig, { isServer: false }));
-}
-
-function bundleNoModule(config) {
-  return esbuild.build(config.esbuild(noModuleConfig, { isServer: false }));
-}
-
 async function build() {
   fs.copySync('public', '.premix/public');
+  const userConfig = getUserConfig();
 
-  const config = getUserConfig();
-  const promises = [bundleEsm(config), buildServer(config)];
+  const promises = [
+    bundleEsm(userConfig),
+    buildServer(userConfig),
+    esbuild.build(errorConfig),
+  ];
 
   if (isProd) {
-    promises.push(bundleNoModule(config));
+    promises.push(bundleNoModule(userConfig));
   }
 
   const [{ metafile }] = await Promise.all(promises);
 
-  fs.outputJsonSync('.premix/build/meta.json', metafile);
+  fs.outputJsonSync('.premix/build/meta.json', metafile, {
+    spaces: isProd ? 0 : 2,
+  });
 }
 
 build();

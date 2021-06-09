@@ -14,9 +14,12 @@ import {
   Link as ReactRouterLink,
   LinkProps as ReactRouterLinkProps,
   useLocation as useReactRouterLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
 } from 'react-router-dom';
 import { useSetPendingLocation, useSetPendingFormSubmit } from 'src';
-import { fetchRouteData } from './client';
+import { fetchRouteData, usePrefetchRouteData } from './client';
 
 interface PremixState {
   meta: Record<string, string>;
@@ -31,12 +34,30 @@ interface PremixState {
     props: any;
   };
   script: string;
+  noJs: boolean;
 }
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-export * from 'react-router-dom';
+export { Route, Routes, Router } from 'react-router-dom';
+
+export function useRouter() {
+  const { search, pathname, state } = useLocation();
+  const navigate = useNavigate();
+  const params = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  return {
+    href: pathname,
+    search,
+    state,
+    params,
+    navigate,
+    searchParams,
+    setSearchParams,
+  };
+}
 
 export function useLocation() {
   return useReactRouterLocation() as Location<PremixState>;
@@ -47,11 +68,12 @@ export interface LinkProps extends Omit<ReactRouterLinkProps, 'to'> {
 }
 
 export function Link({ href, ...props }: LinkProps) {
+  const prefetchRouteData = usePrefetchRouteData();
   const fetchedData = useRef(false);
 
   const prefetch = async () => {
     if (fetchedData.current) return;
-    await fetchRouteData(href);
+    prefetchRouteData(href);
     fetchedData.current = true;
   };
 
@@ -105,13 +127,20 @@ export function PremixBrowserRouter({
     return history.listen(async update => {
       try {
         setPendingLocation(true);
-        const data = await fetchRouteData(update.location.pathname);
+        let data = {};
+
+        if (((update.location.state as any) || {}).shallow !== true) {
+          data = await fetchRouteData(update.location.pathname);
+        }
 
         setState({
           ...update,
           location: {
             ...update.location,
-            state: data,
+            state: {
+              ...data,
+              ...update.location.state,
+            },
           },
         });
         setPendingLocation(false);

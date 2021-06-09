@@ -1,9 +1,9 @@
 import compression from 'compression';
 import express, { RequestHandler, Router } from 'express';
-// import fs from 'fs-extra';
 import morgan from 'morgan';
 import fetch from 'node-fetch';
-// import { compile } from 'path-to-regexp';
+import ReactDOMServer from 'react-dom/server';
+import { ErrorOverlay } from '.';
 import handleRequest from '../app/entry-server';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/render-app';
@@ -108,9 +108,10 @@ export function createRequestHandler(): RequestHandler {
 
     try {
       const [{ notFound }, meta] = await renderApp(href as string);
-
       if (notFound === true) {
-        return res.status(404).send('Page not found');
+        return res.status(404).json({
+          error: 'Page not found',
+        });
       }
 
       const { headers, ...data } = meta;
@@ -129,21 +130,33 @@ export function createRequestHandler(): RequestHandler {
   });
 
   router.get('*', async (req, res) => {
-    const [PremixApp, data] = await renderApp(req.originalUrl);
+    try {
+      const [PremixApp, data] = await renderApp(req.originalUrl);
 
-    if ((PremixApp as any).notFound === true) {
-      return res.status(404).send('Page not found');
+      if ((PremixApp as any).notFound === true) {
+        return res.status(404).send('Page not found');
+      }
+
+      const { headers } = data;
+
+      const html = handleRequest(PremixApp);
+
+      Object.entries(headers).forEach(([key, value]) =>
+        res.setHeader(key, value as string)
+      );
+
+      res.send(html);
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        const html = ReactDOMServer.renderToString(
+          <ErrorOverlay error={error} />
+        );
+
+        return res.status(500).send(`<!DOCTYPE html>${html}`);
+      }
+
+      res.status(500).send(`Something went wrong!`);
     }
-
-    const { headers } = data;
-
-    const html = handleRequest(PremixApp);
-
-    Object.entries(headers).forEach(([key, value]) =>
-      res.setHeader(key, value as string)
-    );
-
-    res.send(html);
   });
 
   router.all('*', async (req, res) => {

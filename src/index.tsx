@@ -1,3 +1,5 @@
+import { ReactDevOverlay } from '@next/react-dev-overlay/lib/client';
+import { useRouter } from '@premix/core/router';
 import React, {
   createContext,
   forwardRef,
@@ -9,7 +11,6 @@ import React, {
   useState,
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useLocation, useNavigate } from '@premix/core/router';
 import { fetchRouteData } from './client';
 import { Route } from './types';
 import loadable from './utils/loadable';
@@ -28,10 +29,11 @@ const PendingFormDataContext = createContext<
 
 function ErrorFallback({ error }) {
   return (
-    <div role="alert">
-      <p>Something went wrong:</p>
-      <pre>{error.message}</pre>
-    </div>
+    <html>
+      <body>
+        <ReactDevOverlay />
+      </body>
+    </html>
   );
 }
 
@@ -67,7 +69,7 @@ export function usePendingLocation() {
 export function useRouteData<TRouteData = any>(): TRouteData {
   const {
     state: { data },
-  } = useLocation();
+  } = useRouter();
 
   return data.props;
 }
@@ -75,7 +77,7 @@ export function useRouteData<TRouteData = any>(): TRouteData {
 export function Meta() {
   const {
     state: { meta },
-  } = useLocation();
+  } = useRouter();
 
   return (
     <>
@@ -96,13 +98,15 @@ export function Meta() {
 export function Links() {
   const {
     state: { links },
-  } = useLocation();
+  } = useRouter();
 
   return (
     <>
       {links.map(link => (
         <Fragment key={link.href}>
-          {['preload', 'modulepreload'].includes(link.rel) ? (
+          {['preload', 'modulepreload', 'prefetch', 'prerender'].includes(
+            link.rel
+          ) ? (
             <link rel={link.rel} as={link.as} href={link.href} />
           ) : (
             <>
@@ -122,18 +126,20 @@ export function Links() {
 }
 
 export function Scripts() {
-  const { state: premix } = useLocation();
+  const { state: premix } = useRouter();
 
   return (
-    <>
-      <script
-        id="__PREMIX_DATA__"
-        type="application/json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(premix) }}
-      />
-      <script noModule src="/build/nomodule.js"></script>
-      <script type="module" src={premix.script}></script>
-    </>
+    !premix.noJs && (
+      <>
+        <script
+          id="__PREMIX_DATA__"
+          type="application/json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(premix) }}
+        />
+        <script noModule src="/build/nomodule.js"></script>
+        <script type="module" src={premix.script}></script>
+      </>
+    )
   );
 }
 
@@ -180,9 +186,8 @@ function mergeRefs<T = any>(
 type Method = 'post' | 'put' | 'delete' | 'patch';
 
 export function useSubmit(action?: string) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const pathname = action || location.pathname;
+  const router = useRouter();
+  const pathname = action || router.href;
 
   return async (
     data: any,
@@ -197,9 +202,9 @@ export function useSubmit(action?: string) {
     });
 
     if (!response.ok) {
-      navigate(pathname, {
+      router.navigate(pathname, {
         replace,
-        state: location.state,
+        state: router.state,
       });
     }
 
@@ -207,7 +212,7 @@ export function useSubmit(action?: string) {
 
     if (response.redirected) {
       const data = await fetchRouteData(redirectTo);
-      navigate(redirectTo, {
+      router.navigate(redirectTo, {
         replace,
         state: data,
       });
@@ -263,4 +268,33 @@ export function makeRoutes(
     ...route,
     component: route.component || loadable(route.page),
   }));
+}
+
+export function ErrorOverlay({ error }: { error: Error }) {
+  return (
+    <html>
+      <head>
+        <title>Premix Error</title>
+      </head>
+      <body>
+        <div id="__premix">
+          <ReactDevOverlay />
+        </div>
+        <script
+          id="__PREMIX_DATA__"
+          type="application/json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              err: {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              },
+            }),
+          }}
+        />
+        <script src="/build/error-entry.js" />
+      </body>
+    </html>
+  );
 }

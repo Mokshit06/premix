@@ -29,6 +29,10 @@ export type HeadersFunction<TData = any> = (
   data: TData
 ) => Record<string, string>;
 
+export interface PageConfig {
+  noJs?: boolean;
+}
+
 export type Page = Promise<{
   default: (props: any) => ReactElement;
   meta?: MetaFunction;
@@ -37,6 +41,7 @@ export type Page = Promise<{
   action?: ActionFunction;
   loadPaths?: LoadPathsFunction;
   headers?: HeadersFunction;
+  config?: PageConfig;
 }>;
 
 export interface Route {

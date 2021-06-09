@@ -1,9 +1,11 @@
+import { PremixServerRouter } from '@premix/core/router';
 import { Metafile } from 'esbuild';
 import { match } from 'path-to-regexp';
+import React from 'react';
 import { URL } from 'url';
 import { PremixProvider } from '..';
 import App from '../../app/App';
-import { Page } from '../types';
+import { Page, Route } from '../types';
 import {
   getMetaFile,
   getPageChunk,
@@ -12,8 +14,6 @@ import {
   getStylesheetMap,
 } from './extract';
 import matchRoute from './matchRoute';
-import React from 'react';
-import { PremixServerRouter } from '@premix/core/router';
 
 type Unwrap<T> = T extends Promise<infer U> ? U : T;
 
@@ -39,7 +39,9 @@ export default async function renderApp(url: string) {
     stylesheetMap = getStylesheetMap(metafile);
   }
 
-  const route = globalThis.__PREMIX_MANIFEST__.find(x =>
+  const route: Route & {
+    pagePath: string;
+  } = globalThis.__PREMIX_MANIFEST__.find(x =>
     matchRoute(x.path, urlWithoutQuery)
   );
 
@@ -58,6 +60,7 @@ export default async function renderApp(url: string) {
     loader: routerPage.loader || (async () => ({ props: {} })),
     default: routerPage.default || (() => <h1>404</h1>),
     headers: routerPage.headers || (() => ({})),
+    config: routerPage.config || {},
   };
 
   // const params = exec(urlWithoutQuery, param(route.path));
@@ -86,12 +89,17 @@ export default async function renderApp(url: string) {
 
   const script = rootScript.replace(/^\.premix\/public/, '');
   const links = [
-    { rel: 'modulepreload', href: script },
-    { rel: 'modulepreload', href: chunk.replace(/^\.premix\/public/, '') },
-    ...scripts.map(i => ({ rel: 'modulepreload', href: i })),
     ...pageStyles.map(style => ({ rel: 'stylesheet', href: style })),
     ...page.links(data.props),
   ];
+
+  if (!page.config.noJs) {
+    links.push(
+      { rel: 'modulepreload', href: script },
+      { rel: 'modulepreload', href: chunk.replace(/^\.premix\/public/, '') },
+      ...scripts.map(i => ({ rel: 'modulepreload', href: i }))
+    );
+  }
 
   const RemixApp = () => (
     <PremixProvider>
@@ -101,10 +109,13 @@ export default async function renderApp(url: string) {
           links,
           data,
           script,
+          noJs: page.config.noJs,
         }}
         location={url}
       >
+        {/* <ReactDevOverlay> */}
         <App Component={Component} />
+        {/* </ReactDevOverlay> */}
       </PremixServerRouter>
     </PremixProvider>
   );
