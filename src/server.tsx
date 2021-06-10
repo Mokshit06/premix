@@ -3,8 +3,8 @@ import express, { RequestHandler, Router } from 'express';
 import morgan from 'morgan';
 import fetch from 'node-fetch';
 import ReactDOMServer from 'react-dom/server';
+import { pipeToNodeWritable } from 'react-dom/unstable-fizz';
 import { ErrorOverlay } from '.';
-import handleRequest from '../app/entry-server';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/render-app';
 
@@ -129,6 +129,21 @@ export function createRequestHandler(): RequestHandler {
     }
   });
 
+  router.get('/api/*', async (req, res) => {
+    const apiRoute = (globalThis.__API_ROUTES__ as Array<{
+      path: string;
+      handler: any;
+    }>).find(route => {
+      return matchRoute(route.path, req.url);
+    });
+
+    if (!apiRoute) {
+      return res.status(404).send('Page not found');
+    }
+
+    await apiRoute.handler.default(req, res);
+  });
+
   router.get('*', async (req, res) => {
     try {
       const [PremixApp, data] = await renderApp(req.originalUrl);
@@ -139,15 +154,35 @@ export function createRequestHandler(): RequestHandler {
 
       const { headers } = data;
 
-      const html = handleRequest(PremixApp);
-
       Object.entries(headers).forEach(([key, value]) =>
         res.setHeader(key, value as string)
       );
 
-      res.send(html);
+      const errHandler = error => {
+        console.error('Fatal', error);
+      };
+
+      res.socket.on('error', errHandler);
+      let didError = false;
+
+      const { startWriting, abort } = pipeToNodeWritable(<PremixApp />, res, {
+        onReadyToStream() {
+          res.statusCode = didError ? 500 : 200;
+          res.setHeader('Content-type', 'text/html');
+          res.write('<!DOCTYPE html>');
+          startWriting();
+          res.socket.off('error', errHandler);
+        },
+        onError(err) {
+          didError = true;
+          console.error(err);
+        },
+      });
+
+      setTimeout(abort, 10000);
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
+        console.error(error);
         const html = ReactDOMServer.renderToString(
           <ErrorOverlay error={error} />
         );

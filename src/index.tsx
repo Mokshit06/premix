@@ -4,6 +4,7 @@ import React, {
   createContext,
   forwardRef,
   Fragment,
+  lazy,
   ReactElement,
   ReactNode,
   useContext,
@@ -11,9 +12,8 @@ import React, {
   useState,
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { fetchRouteData } from './client';
+import { fetchRouteData, formatDataURL } from './client';
 import { Route } from './types';
-import loadable from './utils/loadable';
 
 interface PendingFormData {
   method: Method;
@@ -266,7 +266,7 @@ export function makeRoutes(
 ) {
   return routes.map(route => ({
     ...route,
-    component: route.component || loadable(route.page),
+    component: lazy(route.page),
   }));
 }
 

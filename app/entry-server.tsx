@@ -1,3 +1,5 @@
+// Not used for now
+
 import ReactDOMServer from 'react-dom/server';
 import { ReactElement } from 'react';
 

@@ -11,6 +11,7 @@ export interface Meta {
 export interface Link {
   rel: string;
   href: string;
+  as?: string;
   media?: string;
 }
 

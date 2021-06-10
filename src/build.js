@@ -9,7 +9,7 @@ const urlPlugin = require('./plugins/url');
 const httpPlugin = require('./plugins/http');
 const workerPlugin = require('./plugins/worker');
 const premixTransformPlugin = require('./plugins/premix-transform');
-const { getRoutes } = require('./utils/routes');
+const { getRoutes, getApiRoutes } = require('./utils/routes');
 const chalk = require('chalk');
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -72,6 +72,7 @@ const commonConfig = {
 };
 
 const routes = getRoutes();
+const apiRoutes = getApiRoutes();
 
 const entryClient = `
 import { register, ReactDevOverlay } from '@next/react-dev-overlay/lib/client';
@@ -80,6 +81,7 @@ import { Route, Routes, PremixBrowserRouter } from '@premix/core/router';
 import { PremixProvider, makeRoutes } from '@premix/core';
 import matchRoute from '@premix/core/utils/matchRoute';
 import App from './App';
+import { Suspense } from 'react'
 
 globalThis.__PREMIX_MANIFEST__ = makeRoutes([
   ${routes
@@ -99,7 +101,6 @@ const routes = globalThis.__PREMIX_MANIFEST__;
 const premixData = document.getElementById('__PREMIX_DATA__');
 const initialData = JSON.parse(premixData.innerHTML);
 
-
 async function init() {
   const route = routes.find(x => matchRoute(x.path, window.location.pathname));
   const { default: Component } = await route.page();
@@ -107,11 +108,16 @@ async function init() {
   globalThis.__LOADABLE_CACHE__ = {};
   globalThis.__LOADABLE_CACHE__[route.page.toString()] = Component;
 
-  ReactDOM.hydrate(
+  const root = ReactDOM.createRoot(document, {
+    hydrate: true,
+  });
+  
+  root.render(
     <PremixProvider>
       <PremixBrowserRouter value={initialData}>
         <App
           Component={(props) => (
+            <Suspense fallback="Loading...">
             <ReactDevOverlay>
               <Routes>
                 {routes.map(route => (
@@ -123,11 +129,11 @@ async function init() {
                 ))}
               </Routes>
             </ReactDevOverlay>
+            </Suspense>
           )}
         />
       </PremixBrowserRouter>
-    </PremixProvider>,
-    document
+    </PremixProvider>
   );
 }
 
@@ -200,6 +206,15 @@ const serverConfig = {
         })
         .join(',\n')}
     ]);
+
+    globalThis.__API_ROUTES__ = [
+      ${apiRoutes.map(route => {
+        return `{
+          path: ${JSON.stringify(route.path)},
+          handler: require(${JSON.stringify(route.page)})
+        }`;
+      })}
+    ];
 
     require('${shouldPrerender ? '@premix/core/prerender' : './server'}');
     `,

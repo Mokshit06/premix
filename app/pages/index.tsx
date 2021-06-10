@@ -2,7 +2,7 @@ import { useRouteData } from '@premix/core';
 import { Link } from '@premix/core/router';
 import { LoaderFunction, MetaFunction } from '@premix/core/types';
 import Image from 'img:../assets/dummy_image.png?width=500&placeholder';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import MyWorker from 'worker:../lib/worker';
 import '../styles/style.css';
 

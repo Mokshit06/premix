@@ -1,5 +1,5 @@
 import { Todo } from '@prisma/client';
-import { useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Form, usePendingFormSubmit, useRouteData, useSubmit } from 'src';
 import { Link } from '@premix/core/router';
 import type {
@@ -7,10 +7,12 @@ import type {
   LoaderFunction,
   MetaFunction,
 } from '@premix/core/types';
-import Button from '../components/Button';
+// import Button from '../components/Button';
 import { prisma } from '../lib/prisma';
 import '../styles/action.css';
 import '../styles/style.css';
+
+const Button = lazy(() => import('../components/Button'));
 
 export const meta: MetaFunction = () => {
   return {
@@ -102,7 +104,9 @@ export default function ActionPage() {
           Todo:
           <input name="text" type="text" />
         </label>
-        <Button type="submit">Create</Button>
+        <Suspense fallback="Loading button...">
+          <Button type="submit">Create</Button>
+        </Suspense>
       </Form>
     </main>
   );

@@ -44,7 +44,7 @@ function getFilesImported(metafile: Metafile, file: string) {
   Object.entries(outputs).forEach(([name, data]) => {
     if (
       data.imports
-        .filter(i => i.kind === 'import-statement')
+        // .filter(i => i.kind === 'import-statement')
         .some(i => i.path === file)
     ) {
       imports.push(name);
@@ -69,35 +69,85 @@ function getInputs(metafile: Metafile, file: string) {
   return inputs;
 }
 
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+// export function getStylesheetMap(metafile: Metafile) {
+//   const { inputs } = metafile;
+//   const files = [];
+
+//   Object.keys(inputs).forEach(file => {
+//     const fileUrl = new URL(`https://example.com/${file}`);
+//     const isCss = /\.css$/.test(fileUrl.pathname);
+//     const isUrlLoaded = /^\/url-file:(.*)\.css$/.test(fileUrl.pathname);
+
+//     if (!isCss || isUrlLoaded) return;
+
+//     files.push(file);
+//   });
+
+//   return Object.fromEntries(
+//     files
+//       .map(i => {
+//         const inputs = getInputs(metafile, i);
+//         return inputs;
+//       })
+//       .map(input => {
+//         const [js, css] = input;
+//         const filesImported = getFilesImported(metafile, js);
+
+//         if (filesImported.length === 0) {
+//           filesImported.push(js);
+//         }
+
+//         return [css, filesImported];
+//       })
+//   );
+// }
+
+// Old map
+// {
+//   'styles/style.css': [
+//     'pages/index.js',
+//     'pages/about.js'
+//   ],
+// };
+
+// New map
+// {
+//   'pages/index.js': 'pages/index.css',
+//   'pages/about.js': 'pages/about.css'
+// }
+
 export function getStylesheetMap(metafile: Metafile) {
   const { inputs } = metafile;
   const files = [];
 
   Object.keys(inputs).forEach(file => {
     const fileUrl = new URL(`https://example.com/${file}`);
-    const isCss = /\.css$/.test(fileUrl.pathname);
-    const isUrlLoaded = /^\/url-file:(.*)\.css$/.test(fileUrl.pathname);
+    const isPage = /app\/pages\/(.*)\.([tj]sx?)$/.test(fileUrl.pathname);
 
-    if (!isCss || isUrlLoaded) return;
+    if (!isPage) return;
 
     files.push(file);
   });
 
   return Object.fromEntries(
     files
-      .map(i => {
-        const inputs = getInputs(metafile, i);
-        return inputs;
+      .map(file => {
+        return getInputs(metafile, file);
       })
-      .map(input => {
-        const [js, css] = input;
-        const filesImported = getFilesImported(metafile, js);
-
-        if (filesImported.length === 0) {
-          filesImported.push(js);
-        }
-
-        return [css, filesImported];
+      .map(([input]) => {
+        const arr = input.split('.');
+        return [
+          input,
+          Object.keys(metafile.outputs).find(x => {
+            return new RegExp(
+              String.raw`${escapeRegExp(arr[1])}.(.*).css`
+            ).test(x);
+          }),
+        ];
       })
   );
 }

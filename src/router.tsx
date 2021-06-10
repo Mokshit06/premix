@@ -21,7 +21,7 @@ import {
 import { useSetPendingLocation, useSetPendingFormSubmit } from 'src';
 import { fetchRouteData, usePrefetchRouteData } from './client';
 
-interface PremixState {
+export interface PremixState {
   meta: Record<string, string>;
   links: {
     rel: string;
@@ -81,6 +81,10 @@ export function Link({ href, ...props }: LinkProps) {
     <ReactRouterLink
       to={href}
       {...props}
+      onClick={e => {
+        fetchedData.current = false;
+        props.onClick && props.onClick(e);
+      }}
       onTouchStart={async e => {
         await prefetch();
         props.onTouchStart && props.onTouchStart(e);

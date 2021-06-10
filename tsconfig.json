@@ -20,6 +20,10 @@
         "./src/*"
       ]
     },
+    "types": [
+      "react/next",
+      "react-dom/next"
+    ],
     "downlevelIteration": true
   },
   "exclude": [
