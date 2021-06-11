@@ -69,37 +69,58 @@ function getInputs(metafile: Metafile, file: string) {
   return inputs;
 }
 
+// Old map
+// {
+//   'styles/style.[hash].css': [
+//     'pages/index.[hash].js',
+//     'pages/about.[hash].js'
+//   ],
+// };
+
+// New map
+// {
+//   'pages/index.[hash].js': 'styles/style.[hash].css',
+//   'pages/about.[hash].js': 'styles/about.[hash].css'
+// }
+
 export function getStylesheetMap(metafile: Metafile) {
   const { inputs } = metafile;
   const files = [];
 
   Object.keys(inputs).forEach(file => {
     const fileUrl = new URL(`https://example.com/${file}`);
-    const isCss = /\.css$/.test(fileUrl.pathname);
-    const isUrlLoaded = /^\/url-file:(.*)\.css$/.test(fileUrl.pathname);
+    const isPage = /app\/pages\/(.*)\.([tj]sx?)$/.test(fileUrl.pathname);
 
-    if (!isCss || isUrlLoaded) return;
+    if (!isPage) return;
 
     files.push(file);
   });
 
   return Object.fromEntries(
     files
-      .map(i => {
-        const inputs = getInputs(metafile, i);
-        return inputs;
+      .map(file => {
+        return getInputs(metafile, file);
       })
-      .map(input => {
-        const [js, css] = input;
-        const filesImported = getFilesImported(metafile, js);
+      .map(([input]) => {
+        const [, name] = input.split('.');
 
-        if (filesImported.length === 0) {
-          filesImported.push(js);
-        }
-
-        return [css, filesImported];
+        return [
+          input,
+          Object.keys(metafile.outputs).find(x => {
+            // CSS chunk name should match JS chunk
+            // JS -> $post.[hash].js
+            // CSS -> $post.[hash].css
+            return new RegExp(String.raw`${escapeRegExp(name)}.(.*).css`).test(
+              x
+            );
+          }),
+        ];
       })
   );
+}
+
+function escapeRegExp(str: string) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 export function getPageChunk(metafile: Metafile, file: string) {

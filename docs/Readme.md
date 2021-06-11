@@ -22,6 +22,10 @@ Premix supports pages with dynamic routes. For example, if you set the `path` to
 
 Premix prefetches the route data and resources when you hover or touch on the links so that the data is already available when route transition starts. This makes the app feel faster.
 
+#### `useRouter`
+
+`useRouter` is a wraps React Router's multiple hooks into a single hook and provides a few additional benefits
+
 #### `usePendingLocation`
 
 There is also a hook `usePendingLocation` which can be used to see if the transition is taking place.
@@ -115,7 +119,7 @@ export const action: ActionFunction = async (req, res) => {
   await db.posts.create({ ... })
 
   // Optionally redirect to refetch client data
-  res.redirect('/posts')
+  res.redirect(303, '/posts')
 }
 ```
 
@@ -135,6 +139,27 @@ export const action: ActionFunctino = async (req, res) => {
 
   res.redirect('/posts')
 }
+```
+
+## API Routes
+
+API routes provide a solution to build your API with Premix.
+
+Any file inside the folder `pages/api` is mapped to `/api/*` and will be treated as an API endpoint instead of a page. They are server-side only bundles and won't increase your client-side bundle size.
+
+The handlers get the `Request` and `Response` types from Express and work like any other Express request handler.
+
+### Example
+
+```ts
+// pages/api/user.ts
+import type { Request, Response } from 'express';
+
+export default (req: Request, res: Response) => {
+  res.json({
+    name: 'John',
+  });
+};
 ```
 
 ## Optimistic UI
@@ -196,7 +221,7 @@ export const action: ActionFunctino = async (req, res) => {
 
 You can import a stylesheet in any React Component inside your application. Premix will statically analyse your imports to only add those stylesheets to the head of the pages that import that Component.
 
-During build time, all stylesheets will be concatenated into **many minified code split** and preloaded.
+During build time, all stylesheets for each page will be concatenated into seperate files for each page and will be preloaded.
 
 Due to the way it works, it has out of the box support for any other build time styling solution that outputs a css file like `vanilla-extract`, `css-modules` and `sass`.
 
@@ -240,24 +265,38 @@ export default function Post() {
 <!-- Home page -->
 <html>
   <head>
-    <!-- Button Stylesheet -->
-    <link rel="preload" as="style" href="/build/chunks/chunk.5KF3SF.css" />
-    <link rel="stylesheet" href="/build/chunks/chunk.5KF3SF.css" />
+    <!-- Home Page Stylesheet -->
+    <link rel="preload" as="style" href="/build/chunks/pages.[hash].css" />
+    <link rel="stylesheet" href="/build/chunks/pages.[hash].css" />
     ...
   </head>
   ...
 </html>
 ```
 
+```css
+/* Home page stylesheet */
+.button {
+  /* Button Styles */
+}
+```
+
 ```html
 <!-- Post page -->
 <html>
   <head>
-    <!-- No Stylesheet  -->
+    <!-- Post Page Stylesheet -->
+    <link rel="preload" as="style" href="/build/chunks/posts.[hash].css" />
+    <link rel="stylesheet" href="/build/chunks/posts.[hash].css" />
     ...
   </head>
   ...
 </html>
+```
+
+```css
+/* Post page stylesheet */
+/* No css rules */
 ```
 
 ## Image Optimization
@@ -278,7 +317,7 @@ Images are always rendered in such a way as to avoid Cumulative Layout Shift. Th
 import Image from 'img:../assets/image.jpg?width=500&placeholder';
 
 export default function Home() {
-  // This will expand into
+  // This will render
   // <img
   //   height="..."
   //   width=".."
@@ -289,6 +328,8 @@ export default function Home() {
   return <Image />;
 }
 ```
+
+## Error Handling
 
 ## Web Workers
 
@@ -347,10 +388,9 @@ module.exports = {
 
 ## Differences to Remix
 
-### Main differences
+### Main difference
 
-- Premix doesn't support Nested routes. Currently there are no plans to support it as in most of the cases, they create alot of confusion as to which page is rendering on which route.
-- There is no API in Premix for cookie and session management.
+- Premix doesn't support Nested routes.
 
 ### Features unique to Premix
 
@@ -367,6 +407,10 @@ In comparison, Remix only supports Server-Side rendering.
 In Remix, you can only import stylesheets inside the pages which has alot of limitations. For eg. it doesn't support scoped styling, component level CSS, CSS modules or any other styling solution that outputs a CSS file.
 
 Premix statically analyses your CSS imports at build time and creates a map of which stylesheet is being imported on which page and automatically injects them in the `<head />` during rendering.
+
+#### API Routes
+
+In Remix, `pages` can only return React elements and to add an additional endpoint, you need to check for the pathname in the `entry.server.js`. It works fine if you only have 1-2 endpoints but it quickly increases the file size and you can't do dynamic routes. Premix has built-in support for API Routes.
 
 #### Image Optimization
 

@@ -27,11 +27,18 @@ const PendingFormDataContext = createContext<
   [PendingFormData, React.Dispatch<React.SetStateAction<PendingFormData>>]
 >(null);
 
+const ErrorFallbackComponent =
+  process.env.NODE_ENV === 'development'
+    ? ReactDevOverlay
+    : () => <h1>Something went wrong!</h1>;
+
 function ErrorFallback({ error }) {
+  console.error(error);
+
   return (
     <html>
       <body>
-        <ReactDevOverlay />
+        <ErrorFallbackComponent />
       </body>
     </html>
   );

@@ -12,12 +12,12 @@ const premixTransform = {
         const contents = fs.readFileSync(args.path, 'utf8');
         try {
           const transformOne = await babel.transformAsync(contents, {
-            filename: 'noop.tsx',
+            filename: args.path,
             presets: ['@babel/preset-typescript'],
             plugins: ['./src/babel/transform'],
           });
           const transformTwo = await babel.transformAsync(transformOne.code, {
-            filename: 'noop.tsx',
+            filename: args.path,
             presets: ['@babel/preset-typescript'],
             plugins: ['babel-plugin-remove-unused-import'],
           });

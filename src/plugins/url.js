@@ -19,10 +19,13 @@ const urlPlugin = {
     });
 
     build.onLoad({ filter: /.*/, namespace: 'url' }, async args => {
+      const { plugins, stdin, ...options } = build.initialOptions;
+
       const result = await esbuild.build({
+        ...options,
         entryPoints: [args.path],
-        bundle: true,
         write: false,
+        sourcemap: 'inline',
       });
 
       return {

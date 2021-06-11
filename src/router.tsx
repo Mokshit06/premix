@@ -20,22 +20,7 @@ import {
 } from 'react-router-dom';
 import { useSetPendingLocation, useSetPendingFormSubmit } from 'src';
 import { fetchRouteData, usePrefetchRouteData } from './client';
-
-interface PremixState {
-  meta: Record<string, string>;
-  links: {
-    rel: string;
-    as?: string;
-    href: string;
-    media?: string;
-    [key: string]: string;
-  }[];
-  data: {
-    props: any;
-  };
-  script: string;
-  noJs: boolean;
-}
+import { PremixState } from './types';
 
 const useIsomorphicLayoutEffect =
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;

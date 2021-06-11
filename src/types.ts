@@ -56,3 +56,19 @@ export type RouteWithComponent = Route & {
 export interface PremixConfig {
   esbuild(config: BuildOptions, options: { isServer: boolean }): BuildOptions;
 }
+
+export interface PremixState {
+  meta: Record<string, string>;
+  links: {
+    rel: string;
+    as?: string;
+    href: string;
+    media?: string;
+    [key: string]: string;
+  }[];
+  data: {
+    props: any;
+  };
+  script: string;
+  noJs: boolean;
+}

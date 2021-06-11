@@ -129,6 +129,21 @@ export function createRequestHandler(): RequestHandler {
     }
   });
 
+  router.get('/api/*', async (req, res) => {
+    const apiRoute = (globalThis.__API_ROUTES__ as Array<{
+      path: string;
+      handler: any;
+    }>).find(route => {
+      return matchRoute(route.path, req.url);
+    });
+
+    if (!apiRoute) {
+      return res.status(404).send('Page not found');
+    }
+
+    await apiRoute.handler.default(req, res);
+  });
+
   router.get('*', async (req, res) => {
     try {
       const [PremixApp, data] = await renderApp(req.originalUrl);
@@ -147,6 +162,8 @@ export function createRequestHandler(): RequestHandler {
 
       res.send(html);
     } catch (error) {
+      console.error(error);
+
       if (process.env.NODE_ENV === 'development') {
         const html = ReactDOMServer.renderToString(
           <ErrorOverlay error={error} />

@@ -9,7 +9,7 @@ const urlPlugin = require('./plugins/url');
 const httpPlugin = require('./plugins/http');
 const workerPlugin = require('./plugins/worker');
 const premixTransformPlugin = require('./plugins/premix-transform');
-const { getRoutes } = require('./utils/routes');
+const { getRoutes, getApiRoutes } = require('./utils/routes');
 const chalk = require('chalk');
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -57,14 +57,30 @@ const commonConfig = {
     `.trim(),
   },
   entryNames: '[dir]/[name]',
-  plugins: [urlPlugin, imagePlugin, httpPlugin, workerPlugin],
+  plugins: [
+    urlPlugin,
+    imagePlugin,
+    httpPlugin,
+    workerPlugin,
+    {
+      name: 'next-dev-overlay',
+      setup(build) {
+        build.onLoad({ filter: /@next\/react-dev-overlay\/*/ }, args => {
+          if (process.env.NODE_ENV === 'production') {
+            return {
+              contents: `module.exports = {}`,
+            };
+          }
+        });
+      },
+    },
+  ],
   external: [],
   define: {
     'process.env.NODE_ENV': isProd ? "'production'" : "'development'",
   },
   sourcemap: true,
-  minify: isProd,
-  treeShaking: true,
+  minify: true,
   publicPath: '/build',
   loader: {
     '.js': 'jsx',
@@ -72,6 +88,7 @@ const commonConfig = {
 };
 
 const routes = getRoutes();
+const apiRoutes = getApiRoutes();
 
 const entryClient = `
 import { register, ReactDevOverlay } from '@next/react-dev-overlay/lib/client';
@@ -80,6 +97,7 @@ import { Route, Routes, PremixBrowserRouter } from '@premix/core/router';
 import { PremixProvider, makeRoutes } from '@premix/core';
 import matchRoute from '@premix/core/utils/matchRoute';
 import App from './App';
+import { Fragment } from 'react';
 
 globalThis.__PREMIX_MANIFEST__ = makeRoutes([
   ${routes
@@ -92,13 +110,18 @@ globalThis.__PREMIX_MANIFEST__ = makeRoutes([
     .join(',\n')}
 ]);
 
-register();
+if (process.env.NODE_ENV === 'development') {
+  register();
+}
 
 const routes = globalThis.__PREMIX_MANIFEST__;
 
 const premixData = document.getElementById('__PREMIX_DATA__');
 const initialData = JSON.parse(premixData.innerHTML);
 
+const DevOverlay = process.env.NODE_ENV === 'development'
+    ? ReactDevOverlay
+    : Fragment
 
 async function init() {
   const route = routes.find(x => matchRoute(x.path, window.location.pathname));
@@ -112,7 +135,7 @@ async function init() {
       <PremixBrowserRouter value={initialData}>
         <App
           Component={(props) => (
-            <ReactDevOverlay>
+            <DevOverlay>
               <Routes>
                 {routes.map(route => (
                   <Route
@@ -122,7 +145,7 @@ async function init() {
                   />
                 ))}
               </Routes>
-            </ReactDevOverlay>
+            </DevOverlay>
           )}
         />
       </PremixBrowserRouter>
@@ -201,6 +224,15 @@ const serverConfig = {
         .join(',\n')}
     ]);
 
+    globalThis.__API_ROUTES__ = [
+      ${apiRoutes.map(route => {
+        return `{
+          path: ${JSON.stringify(route.path)},
+          handler: require(${JSON.stringify(route.page)})
+        }`;
+      })}
+    ];
+
     require('${shouldPrerender ? '@premix/core/prerender' : './server'}');
     `,
     loader: 'tsx',
@@ -260,14 +292,12 @@ async function build() {
   fs.copySync('public', '.premix/public');
   const userConfig = getUserConfig();
 
-  const promises = [
-    bundleEsm(userConfig),
-    buildServer(userConfig),
-    esbuild.build(errorConfig),
-  ];
+  const promises = [bundleEsm(userConfig), buildServer(userConfig)];
 
   if (isProd) {
     promises.push(bundleNoModule(userConfig));
+  } else {
+    promises.push(esbuild.build(errorConfig));
   }
 
   const [{ metafile }] = await Promise.all(promises);

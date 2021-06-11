@@ -20,7 +20,7 @@ type Unwrap<T> = T extends Promise<infer U> ? U : T;
 let metafile: Metafile;
 let scripts: string[];
 let rootScript: string;
-let stylesheetMap: Record<string, string[]>;
+let stylesheetMap: Record<string, string>;
 
 if (process.env.NODE_ENV === 'production') {
   metafile = getMetaFile();
@@ -77,21 +77,15 @@ export default async function renderApp(url: string) {
   const headers = page.headers(data.props);
   const Component = routerPage.default;
 
-  const pageStyles = [];
-
-  for (const [cssFile, pageChunks] of Object.entries(stylesheetMap)) {
-    const url = cssFile.replace(/^\.premix\/public/, '');
-
-    if (pageChunks.some(x => x === chunk)) {
-      pageStyles.push(url);
-    }
-  }
-
   const script = rootScript.replace(/^\.premix\/public/, '');
-  const links = [
-    ...pageStyles.map(style => ({ rel: 'stylesheet', href: style })),
-    ...page.links(data.props),
-  ];
+  const links = page.links(data.props);
+
+  if (stylesheetMap[chunk]) {
+    links.push({
+      rel: 'stylesheet',
+      href: stylesheetMap[chunk].replace(/^\.premix\/public/, ''),
+    });
+  }
 
   if (!page.config.noJs) {
     links.push(
@@ -113,9 +107,7 @@ export default async function renderApp(url: string) {
         }}
         location={url}
       >
-        {/* <ReactDevOverlay> */}
         <App Component={Component} />
-        {/* </ReactDevOverlay> */}
       </PremixServerRouter>
     </PremixProvider>
   );
