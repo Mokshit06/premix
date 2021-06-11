@@ -80,7 +80,7 @@ const commonConfig = {
     'process.env.NODE_ENV': isProd ? "'production'" : "'development'",
   },
   sourcemap: true,
-  minify: true,
+  minify: isProd,
   publicPath: '/build',
   loader: {
     '.js': 'jsx',

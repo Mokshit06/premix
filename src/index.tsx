@@ -143,7 +143,9 @@ export function Scripts() {
           type="application/json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(premix) }}
         />
-        <script noModule src="/build/nomodule.js"></script>
+        {process.env.NODE_ENV === 'production' && (
+          <script noModule src="/build/nomodule.js"></script>
+        )}
         <script type="module" src={premix.script}></script>
       </>
     )

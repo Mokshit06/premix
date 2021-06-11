@@ -1,3 +1,23 @@
+/**
+ * @type {(contentType: string) => import('esbuild').Loader}
+ */
+const contentTypeToLoader = contentType => {
+  if (contentType.includes('application/json')) {
+    return 'json';
+  }
+  if (contentType.includes('text/css')) {
+    return 'css';
+  }
+  if (contentType.includes('image/')) {
+    return 'file';
+  }
+  if (contentType.includes('text/javascript')) {
+    return 'jsx';
+  }
+
+  return 'text';
+};
+
 /** @type {import('esbuild').Plugin} */
 const httpPlugin = {
   name: 'http',
@@ -17,8 +37,13 @@ const httpPlugin = {
     build.onLoad({ filter: /.*/, namespace: 'http-url' }, async args => {
       const res = await fetch(args.path);
       const contents = await res.text();
+      const contentType = res.headers.get('content-type');
+      const loader = contentTypeToLoader(contentType);
 
-      return { contents };
+      return {
+        contents,
+        loader,
+      };
     });
   },
 };

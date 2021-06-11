@@ -7,6 +7,7 @@ import { ErrorOverlay } from '.';
 import handleRequest from '../app/entry-server';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/render-app';
+import cookieParser from 'cookie-parser';
 
 global.fetch = fetch as any;
 
@@ -16,6 +17,7 @@ export function createRequestHandler(): RequestHandler {
   const router = Router();
 
   router.use(compression());
+  router.use(cookieParser());
 
   if (process.env.NODE_ENV === 'development') {
     router.use(
@@ -26,6 +28,11 @@ export function createRequestHandler(): RequestHandler {
       })
     );
   }
+
+  router.use((req, res, next) => {
+    res.setHeader('x-powered-by', 'Premix');
+    next();
+  });
 
   // const revalidateState = {};
 
