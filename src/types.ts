@@ -21,6 +21,7 @@ export type StaticLoaderFunction<TData = any> = (ctx: {
   query: Record<string, string>;
 }) => Promise<{
   props: TData;
+  revalidate?: number;
 }>;
 export type ServerLoaderFunction<TData = any> = (
   req: Request

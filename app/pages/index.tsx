@@ -1,6 +1,10 @@
 import { useRouteData } from '@premix/core';
 import { Link } from '@premix/core/router';
-import { ServerLoaderFunction, MetaFunction } from '@premix/core/types';
+import {
+  ServerLoaderFunction,
+  MetaFunction,
+  StaticLoaderFunction,
+} from '@premix/core/types';
 import Image from 'img:../assets/dummy_image.png?width=500&placeholder';
 import { useEffect } from 'react';
 import MyWorker from 'worker:../lib/worker';
@@ -18,7 +22,7 @@ interface Post {
   id: string;
 }
 
-export const serverLoader: ServerLoaderFunction = async () => {
+export const staticLoader: StaticLoaderFunction = async () => {
   const res = await fetch(
     'https://jsonplaceholder.typicode.com/posts?_limit=5'
   );
@@ -28,6 +32,7 @@ export const serverLoader: ServerLoaderFunction = async () => {
     props: {
       posts,
     },
+    // revalidate: 10,
   };
 };
 

@@ -3,6 +3,8 @@ import {
   HeadersFunction,
   ServerLoaderFunction,
   MetaFunction,
+  StaticLoaderFunction,
+  LoadPathsFunction,
 } from '@premix/core/types';
 import '../../styles/style.css';
 import { Link } from '@premix/core/router';
@@ -26,21 +28,20 @@ interface Post {
   id: string;
 }
 
-// export const loadPaths: LoadPathsFunction = async () => {
-//   const res = await fetch('https://jsonplaceholder.typicode.com/posts');
-//   const posts = (await res.json()) as Post[];
+export const loadPaths: LoadPathsFunction = async () => {
+  const res = await fetch('https://jsonplaceholder.typicode.com/posts');
+  const posts = (await res.json()) as Post[];
 
-//   return {
-//     paths: posts.map(post => ({
-//       params: { post: post.id },
-//     })),
-//   };
-// };
+  return {
+    paths: posts.map(post => ({
+      params: { post: post.id },
+    })),
+  };
+};
 
-// Change to `staticLoader` for prerendering
-export const serverLoader: ServerLoaderFunction = async req => {
+export const staticLoader: StaticLoaderFunction = async ctx => {
   const res = await fetch(
-    `https://jsonplaceholder.typicode.com/posts/${req.params.post}`
+    `https://jsonplaceholder.typicode.com/posts/${ctx.params.post}`
   );
   const post = await res.json();
 

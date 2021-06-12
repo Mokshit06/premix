@@ -7,13 +7,14 @@
     "dev:server": "node src/build && node src/watcher",
     "dev": "yarn clear && concurrently \"yarn watch\" \"yarn dev:server\"",
     "watch": "nodemon --quiet --watch app/pages -e tsx,jsx,js --exec cross-env WATCH=true node src/build.js",
-    "build": "yarn build:prod",
+    "build": "yarn prerender",
     "build:prod": "yarn clear && cross-env NODE_ENV=production node src/build && rm -rf .premix/build/*.css .premix/build/*.webp",
     "build:dev": "yarn clear && cross-env NODE_ENV=development node src/build",
     "clear": "rm -rf .premix/*",
+    "export": "yarn prerender --export",
     "start": "cross-env PORT=3003 NODE_ENV=production node --enable-source-maps .premix/build/server",
     "type-check": "tsc",
-    "prerender": "cross-env PRERENDER=true yarn build && rm -rf out && node .premix/build/prerender"
+    "prerender": "cross-env PRERENDER=true yarn build:prod && rm -rf out && node .premix/build/prerender"
   },
   "dependencies": {
     "@next/react-dev-overlay": "^10.2.3",
@@ -69,6 +70,7 @@
     "eslint-plugin-react-hooks": "^4.2.0",
     "morgan": "^1.10.0",
     "nodemon": "^2.0.7",
+    "ora": "^5.4.1",
     "prisma": "^2.21.2",
     "typescript": "^4.2.4"
   }

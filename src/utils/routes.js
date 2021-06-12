@@ -10,8 +10,9 @@ exports.getRoutes = () => {
       const path = fileName
         .replace(/\.(tsx|js|jsx)$/, '')
         .split('/')
-        .map(x => x.replace(/^\$/, ':'))
+        .map(x => x.replace(/^\[(.*)\]$/, ':$1'))
         .join('/');
+
       return {
         path: path === 'index' ? '/' : `/${path}`,
         page: `app/pages/${fileName}`,
@@ -31,7 +32,7 @@ exports.getApiRoutes = () => {
       const path = fileName
         .replace(/\.([tj]s)$/, '')
         .split('/')
-        .map(x => x.replace(/^\$/, ':'))
+        .map(x => x.replace(/^\[(.*)\]$/, ':$1'))
         .join('/');
 
       return {

@@ -58,7 +58,7 @@ export default async function renderApp(href: string, req?: Request) {
   const page: Unwrap<Page> = {
     links: routerPage.links || (() => []),
     meta: routerPage.meta || (() => ({})),
-    serverLoader: routerPage.serverLoader || (async () => ({ props: {} })),
+    serverLoader: routerPage.serverLoader,
     staticLoader: routerPage.staticLoader || (async () => ({ props: {} })),
     default: routerPage.default || (() => <h1>404</h1>),
     headers: routerPage.headers || (() => ({})),

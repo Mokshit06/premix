@@ -56,7 +56,7 @@ export const loadPaths: LoadPathsFunction = async () => {
 
 #### The `paths` key (required)
 
-The paths key determines which paths will be pre-rendered. For example, suppose that you have a page that uses dynamic routes named `pages/posts/$slug.tsx`. If you export `loadPaths` from this page and return the following for paths:
+The paths key determines which paths will be pre-rendered. For example, suppose that you have a page that uses dynamic routes named `pages/posts/[slug].tsx`. If you export `loadPaths` from this page and return the following for paths:
 
 ```js
 return {
@@ -64,7 +64,7 @@ return {
 };
 ```
 
-Then Premix will statically generate `posts/1` and `posts/2` at build time using the page component in `pages/posts/$id.tsx`.
+Then Premix will statically generate `posts/1` and `posts/2` at build time using the page component in `pages/posts/[id].tsx`.
 
 ### `serverLoader` (Server-Side Rendering)
 
@@ -301,6 +301,14 @@ export const action: ActionFunctino = async (req, res) => {
 }
 ```
 
+## Automatic Static Optimization
+
+Premix automatically determines that a page is static (can be prerendered) if it has no blocking data requirements. This determination is made by the absence of `serverLoader` and `action` in the page.
+
+This feature allows Premix to emit hybrid applications that contain both server-rendered and statically generated pages.
+
+One of the main benefits of this feature is that optimized pages require no server-side computation, and can be instantly streamed to the end-user from multiple CDN locations. The result is an ultra fast loading experience for your users.
+
 ## CSS Suport
 
 You can import a stylesheet in any React Component inside your application. Premix will statically analyse your imports to only add those stylesheets to the head of the pages that import that Component.
@@ -482,7 +490,7 @@ Premix actually adds a few convenient features that are not supported in Remix:
 
 #### Static Generation
 
-Premix supports both Static Generation and Server-Side rendering out of the box. This means that you can prerender your Premix app into html files and deploy it anywhere you want.
+Premix supports both Static Generation and Server-Side on per page basis rendering out of the box. This means that you can prerender your Premix app into html files and deploy it anywhere you want.
 
 In comparison, Remix only supports Server-Side rendering.
 

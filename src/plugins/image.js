@@ -65,11 +65,11 @@ const plugin = {
 
       const base64 = `data:image/${format};base64,${data.toString('base64')}`;
 
-      console.log(
-        chalk.blue`{bold Placeholder}: ${
-          path.parse(filePath).base
-        } in {underline ${Date.now() - time}ms}`
-      );
+      // console.log(
+      //   chalk.blue`{bold Placeholder}: ${
+      //     path.parse(filePath).base
+      //   } in {underline ${Date.now() - time}ms}`
+      // );
 
       return {
         contents: base64,
@@ -94,11 +94,11 @@ const plugin = {
 
       const buffer = await transformer.toBuffer();
 
-      console.log(
-        chalk.cyan`{bold Image}: ${path.parse(filePath).base} in {underline ${
-          Date.now() - time
-        }ms}`
-      );
+      // console.log(
+      //   chalk.cyan`{bold Image}: ${path.parse(filePath).base} in {underline ${
+      //     Date.now() - time
+      //   }ms}`
+      // );
 
       return {
         contents: buffer,
