@@ -14,7 +14,7 @@ const chalk = require('chalk');
 
 const isProd = process.env.NODE_ENV === 'production';
 const shouldWatch = process.env.WATCH === 'true';
-const shouldPrerender = process.env.PRERENDER === 'true';
+const shouldBundleServer = process.env.SERVER === 'true';
 
 /** @type {esbuild.Plugin} */
 const clientScriptPlugin = {
@@ -238,16 +238,65 @@ const serverConfig = {
       })}
     ];
 
-    require('${shouldPrerender ? '@premix/core/prerender' : './server'}');
+    require('./server');
     `,
     loader: 'tsx',
     resolveDir: '.',
   },
-  entryNames: `[dir]/${shouldPrerender ? 'prerender' : 'server'}`,
+  entryNames: `[dir]/server`,
   platform: 'node',
   define: {
     ...commonConfig.define,
-    'process.env.PREMIX_ENV': shouldPrerender ? '"prerender"' : '"ssr"',
+    'process.env.PREMIX_ENV': '"ssr"',
+  },
+  target: 'node12',
+  outdir: '.premix/build/',
+  external: [
+    ...commonConfig.external,
+    ...Object.keys(pkg.dependencies),
+    ...Object.keys(pkg.devDependencies),
+  ],
+  plugins: [clientScriptPlugin, ...commonConfig.plugins],
+  sourcemap: 'inline',
+};
+/** @type {esbuild.BuildOptions} */
+const prerenderConfig = {
+  ...commonConfig,
+  stdin: {
+    contents: `
+    import { makeRoutes } from '@premix/core'
+
+    globalThis.__PREMIX_MANIFEST__ = makeRoutes([
+      ${routes
+        .map(route => {
+          return `{
+          path: '${route.path}',
+          page: () => import('${route.page}'),
+          pagePath: '${route.page}'
+        }`;
+        })
+        .join(',\n')}
+    ]);
+
+    globalThis.__API_ROUTES__ = [
+      ${apiRoutes.map(route => {
+        return `{
+          path: ${JSON.stringify(route.path)},
+          handler: require(${JSON.stringify(route.page)})
+        }`;
+      })}
+    ];
+
+    require('@premix/core/prerender');
+    `,
+    loader: 'tsx',
+    resolveDir: '.',
+  },
+  entryNames: `[dir]/prerender`,
+  platform: 'node',
+  define: {
+    ...commonConfig.define,
+    'process.env.PREMIX_ENV': '"prerender"',
   },
   target: 'node12',
   outdir: '.premix/build/',
@@ -263,6 +312,11 @@ const serverConfig = {
 /** @param {import('./types').PremixConfig} config */
 function buildServer(config) {
   return esbuild.build(config.esbuild(serverConfig, { isServer: true }));
+}
+
+/** @param {import('./types').PremixConfig} config */
+function buildPrerender(config) {
+  return esbuild.build(config.esbuild(prerenderConfig, { isServer: true }));
 }
 
 /** @param {import('./types').PremixConfig} config */
@@ -296,7 +350,11 @@ function getUserConfig() {
 async function build() {
   fs.copySync('public', '.premix/public');
 
-  const promises = [bundleEsm(userConfig), buildServer(userConfig)];
+  const promises = [bundleEsm(userConfig), buildPrerender(userConfig)];
+
+  if (shouldBundleServer) {
+    promises.push(buildServer(userConfig));
+  }
 
   if (isProd) {
     promises.push(bundleNoModule(userConfig));

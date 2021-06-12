@@ -55,15 +55,15 @@ async function prerender() {
       if (shouldExport) {
         if (page.action) {
           if (!spinner.isSpinning) return;
-          spinner.warn(
-            chalk.yellow`{bold.underline WARNING}: Actions do not work with Prerendering [${route.path}]`
+          spinner.fail(
+            chalk.red`{bold.underline ERROR}: Actions do not work with Prerendering [${route.path}]`
           );
         }
 
         if (page.serverLoader) {
           if (!spinner.isSpinning) return;
-          spinner.warn(
-            chalk.yellow`{bold.underline WARNING}: Server loaders do not work with Prerendering [${route.path}]`
+          spinner.fail(
+            chalk.red`{bold.underline ERROR}: Server loaders do not work with Prerendering [${route.path}]`
           );
         }
       }
@@ -88,10 +88,10 @@ async function prerender() {
 
   await Promise.all(pages.map(writeHTMLFile));
 
-  fs.copySync('.premix/public', 'out');
   if (!spinner.isSpinning) return;
 
   if (shouldExport) {
+    fs.copySync('.premix/public', 'out');
     return spinner.succeed(`Prerendered ${numPagesRendered} pages!`);
   }
 

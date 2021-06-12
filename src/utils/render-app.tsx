@@ -87,6 +87,7 @@ export default async function renderApp(href: string, req?: Request) {
       query: Object.fromEntries(url.searchParams),
     });
   }
+
   const meta = page.meta(data.props);
   const headers = page.headers(data.props);
   const Component = routerPage.default;

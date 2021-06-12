@@ -131,6 +131,7 @@ export function createRequestHandler({
 
     try {
       const [{ notFound }, meta] = await renderApp(href as string, req);
+
       if (notFound === true) {
         return res.status(404).json({
           error: 'Page not found',
