@@ -16,9 +16,15 @@ export interface Link {
 
 export type LinksFunction<TData = any> = (data: TData) => Link[];
 export type MetaFunction<TData = any> = (data: TData) => Meta;
-export type LoaderFunction<TData = Record<string, any>> = (ctx: {
+export type StaticLoaderFunction<TData = any> = (ctx: {
   params: any;
+  query: Record<string, string>;
 }) => Promise<{
+  props: TData;
+}>;
+export type ServerLoaderFunction<TData = any> = (
+  req: Request
+) => Promise<{
   props: TData;
 }>;
 export type ActionFunction = (request: Request, response: Response) => any;
@@ -37,7 +43,8 @@ export type Page = Promise<{
   default: (props: any) => ReactElement;
   meta?: MetaFunction;
   links?: LinksFunction;
-  loader?: LoaderFunction;
+  staticLoader?: StaticLoaderFunction;
+  serverLoader?: ServerLoaderFunction;
   action?: ActionFunction;
   loadPaths?: LoadPathsFunction;
   headers?: HeadersFunction;
@@ -55,6 +62,9 @@ export type RouteWithComponent = Route & {
 
 export interface PremixConfig {
   esbuild(config: BuildOptions, options: { isServer: boolean }): BuildOptions;
+  watchServer?: {
+    url: string;
+  };
 }
 
 export interface PremixState {

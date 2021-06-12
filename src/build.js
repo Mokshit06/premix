@@ -42,6 +42,8 @@ const serverScriptPlugin = {
   },
 };
 
+const userConfig = getUserConfig();
+
 /** @type {esbuild.BuildOptions} */
 const commonConfig = {
   inject: ['./src/react-shim.js'],
@@ -77,7 +79,10 @@ const commonConfig = {
   ],
   external: [],
   define: {
-    'process.env.NODE_ENV': isProd ? "'production'" : "'development'",
+    'process.env.NODE_ENV': JSON.stringify(
+      isProd ? 'production' : 'development'
+    ),
+    'process.env.PREMIX_CONFIG': JSON.stringify(userConfig),
   },
   sourcemap: true,
   minify: isProd,
@@ -290,7 +295,6 @@ function getUserConfig() {
 
 async function build() {
   fs.copySync('public', '.premix/public');
-  const userConfig = getUserConfig();
 
   const promises = [bundleEsm(userConfig), buildServer(userConfig)];
 

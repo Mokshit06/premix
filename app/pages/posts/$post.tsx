@@ -1,8 +1,7 @@
 import { useRouteData } from '@premix/core';
 import {
   HeadersFunction,
-  LoaderFunction,
-  LoadPathsFunction,
+  ServerLoaderFunction,
   MetaFunction,
 } from '@premix/core/types';
 import '../../styles/style.css';
@@ -27,20 +26,21 @@ interface Post {
   id: string;
 }
 
-export const loadPaths: LoadPathsFunction = async () => {
-  const res = await fetch('https://jsonplaceholder.typicode.com/posts');
-  const posts = (await res.json()) as Post[];
+// export const loadPaths: LoadPathsFunction = async () => {
+//   const res = await fetch('https://jsonplaceholder.typicode.com/posts');
+//   const posts = (await res.json()) as Post[];
 
-  return {
-    paths: posts.map(post => ({
-      params: { post: post.id },
-    })),
-  };
-};
+//   return {
+//     paths: posts.map(post => ({
+//       params: { post: post.id },
+//     })),
+//   };
+// };
 
-export const loader: LoaderFunction = async ({ params }) => {
+// Change to `staticLoader` for prerendering
+export const serverLoader: ServerLoaderFunction = async req => {
   const res = await fetch(
-    `https://jsonplaceholder.typicode.com/posts/${params.post}`
+    `https://jsonplaceholder.typicode.com/posts/${req.params.post}`
   );
   const post = await res.json();
 

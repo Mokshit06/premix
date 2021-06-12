@@ -152,8 +152,14 @@ export function Scripts() {
   );
 }
 
-export function LiveReload({ url = 'http://localhost:3456' }) {
+export function LiveReload() {
   if (process.env.NODE_ENV !== 'development') return null;
+
+  const { watchServer } = process.env.PREMIX_CONFIG as any;
+  const url = (watchServer?.url || 'http://localhost:[port]').replace(
+    '[port]',
+    '3456'
+  );
 
   return (
     <script
@@ -208,26 +214,18 @@ export function useSubmit(action?: string) {
     const response = await fetch(pathname, {
       method,
       body: new URLSearchParams(data),
+      redirect: 'manual',
     });
-
-    if (!response.ok) {
-      router.navigate(pathname, {
-        replace,
-        state: router.state,
-      });
-    }
 
     const redirectTo = new URL(response.url).pathname;
 
-    if (response.redirected) {
-      const data = await fetchRouteData(redirectTo);
+    if (response.type === 'opaqueredirect') {
       router.navigate(redirectTo, {
-        replace,
-        state: data,
+        replace: true,
       });
     } else {
       if (process.env.NODE_ENV === 'development') {
-        throw new Error('You must redirect to a path from your `actions`');
+        throw new Error('You must redirect to a path from your `action`');
       }
     }
   };

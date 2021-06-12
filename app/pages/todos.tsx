@@ -4,7 +4,7 @@ import { Form, usePendingFormSubmit, useRouteData, useSubmit } from 'src';
 import { Link } from '@premix/core/router';
 import type {
   ActionFunction,
-  LoaderFunction,
+  ServerLoaderFunction,
   MetaFunction,
 } from '@premix/core/types';
 import Button from '../components/Button';
@@ -18,22 +18,29 @@ export const meta: MetaFunction = () => {
   };
 };
 
-export const loader: LoaderFunction = async () => {
+export const serverLoader: ServerLoaderFunction = async req => {
   const todos = await prisma.todo.findMany();
+  const [message] = req.flash('message');
+  const errors = req.flash('error');
 
   return {
-    props: { todos },
+    props: { todos, message, errors },
   };
 };
 
 export const action: ActionFunction = async (req, res) => {
   switch (req.method) {
     case 'POST': {
+      if (!req.body.text) {
+        req.flash('error', 'Text required!');
+        return res.redirect(303, '/todos');
+      }
       await prisma.todo.create({
         data: {
           text: req.body.text,
         },
       });
+      req.flash('message', 'Created Todo');
       break;
     }
     case 'PUT': {
@@ -45,6 +52,7 @@ export const action: ActionFunction = async (req, res) => {
           complete: JSON.parse(req.body.complete),
         },
       });
+      req.flash('message', 'Updated Todo');
       break;
     }
   }
@@ -53,7 +61,11 @@ export const action: ActionFunction = async (req, res) => {
 };
 
 export default function ActionPage() {
-  const { todos } = useRouteData<{ todos: Todo[] }>();
+  const { todos, message, errors } = useRouteData<{
+    todos: Todo[];
+    message: string;
+    errors: string[];
+  }>();
   const pendingFormSubmit = usePendingFormSubmit();
   const formRef = useRef<HTMLFormElement>();
   const submit = useSubmit();
@@ -66,6 +78,28 @@ export default function ActionPage() {
 
   return (
     <main>
+      {message && (
+        <div
+          style={{
+            padding: '10px 15px',
+            backgroundColor: 'green',
+            color: 'white',
+          }}
+        >
+          <h1>{message}</h1>
+        </div>
+      )}
+      {errors.map(err => (
+        <div
+          style={{
+            padding: '10px 15px',
+            backgroundColor: 'orange',
+            color: 'white',
+          }}
+        >
+          <h1>{err}</h1>
+        </div>
+      ))}
       <Link href="/">Home</Link>
       <h2>Todos</h2>
       <ul>

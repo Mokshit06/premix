@@ -24,7 +24,7 @@ Premix prefetches the route data and resources when you hover or touch on the li
 
 #### `useRouter`
 
-`useRouter` is a wraps React Router's multiple hooks into a single hook and provides a few additional benefits
+`useRouter` wraps React Router's multiple hooks into a single hook and provides a few additional methods like `prefetch` to preload a route's assets (CSS and JS) and its data so that the browser can cache it, for faster navigation.
 
 #### `usePendingLocation`
 
@@ -34,7 +34,8 @@ There is also a hook `usePendingLocation` which can be used to see if the transi
 
 Premix has two functions for data fetching:
 
-- `loader` (Hybrid): Fetch data at build time or on each request.
+- `serverLoader` (Server-Side Rendering): Fetch data on each request.
+- `staticLoader` (Static Generation): Fetch data at build time.
 - `loadPaths` (Static Generation): Specify dynamic routes to pre-render pages based on data.
 
 ### `loadPaths` (Static Generation)
@@ -65,12 +66,24 @@ return {
 
 Then Premix will statically generate `posts/1` and `posts/2` at build time using the page component in `pages/posts/$id.tsx`.
 
-### `loader` (Hybrid)
+### `serverLoader` (Server-Side Rendering)
 
-If you export an async function called `loader` from a page, Premix will pre-render this page on each request or build time using the data returned by `loader`.
+If you export an async function called `serverLoader` from a page, Premix will render this page on each request using the data returned by `serverLoader`.
 
 ```ts
-export const loader: LoaderFunction = async context => {
+export const serverLoader: ServerLoaderFunction = async req => {
+  return {
+    props: {},
+  };
+};
+```
+
+### `staticLoader` (Static Generation)
+
+If you export an async function called `staticLoader` from a page, Premix will pre-render this page at build time using the data returned by `staticLoader`.
+
+```ts
+export const staticLoader: StaticLoaderFunction = async ctx => {
   return {
     props: {},
   };
@@ -96,8 +109,8 @@ export const loadPaths: LoadPathsFunction = async () => {
   return { paths };
 };
 
-export const loader: LoaderFunction = async ({ params }) => {
-  const res = await fetch(`https://.../posts/${params.id}`);
+export const serverLoader: ServerLoaderFunction = async req => {
+  const res = await fetch(`https://.../posts/${req.params.id}`);
   const post = await res.json();
 
   return { props: { post } };
@@ -138,6 +151,77 @@ export const action: ActionFunctino = async (req, res) => {
   await db.posts.create({ ... });
 
   res.redirect('/posts')
+}
+```
+
+## Cookies / Sessions
+
+Premix adds Express's [`express-session`](https://www.npmjs.com/package/express-session), [`connect-flash`](https://www.npmjs.com/package/connect-flash) and [`cookie-parser`](https://www.npmjs.com/package/cookie-parser) middlewares. Since you get Express's `req` object in your `action` and `serverLoader`, you can directly interact with the API of these middlewares.
+
+### Flash
+
+```tsx
+export const action: ActionFunction = async (req, res) => {
+  // Set flash message with the key `message`
+  req.flash('message', 'Some message');
+  res.redirect(303, '/');
+};
+
+export const serverLoader: ServerLoaderFunction = async req => {
+  // Get all flash messages with the key `message`
+  const messages = req.flash('message');
+
+  return {
+    props: { messages },
+  };
+};
+
+export default function Home() {
+  const { messages } = useRouteData();
+
+  return (
+    <div>
+      {messages.map(message => (
+        <div className="flash">{message}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Cookies
+
+```tsx
+export const action: ActionFunction = async (req, res) => {
+  // Set cookie with the key `userId`
+  res.cookie('userId', 'some_id');
+  res.redirect(303, '/');
+};
+
+export const serverLoader: ServerLoaderFunction = async req => {
+  // Get all flash messages with the key `message`
+  const userId = req.cookies.userId;
+
+  return {
+    props: { userId },
+  };
+};
+
+export default function Home() {
+  const { userId } = useRouteData();
+  const submit = useSubmit();
+
+  return (
+    <div>
+      {userId ? <h1>User ID: {userId}</h1> : <h1>Not authenticated</h1>}
+      <button
+        // Call the `action` on click
+        onClick={() => submit({})}
+      >
+        Login
+      </button>
+    </div>
+  );
 }
 ```
 

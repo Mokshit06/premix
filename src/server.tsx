@@ -8,16 +8,32 @@ import handleRequest from '../app/entry-server';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/render-app';
 import cookieParser from 'cookie-parser';
+import { Route } from './types';
+import flash from 'connect-flash';
+import session from 'express-session';
 
 global.fetch = fetch as any;
 
-const routes = globalThis.__PREMIX_MANIFEST__;
+const routes = globalThis.__PREMIX_MANIFEST__ as Route[];
 
-export function createRequestHandler(): RequestHandler {
+export function createRequestHandler({
+  sessionSecret,
+}: {
+  sessionSecret: string;
+}): RequestHandler {
   const router = Router();
 
   router.use(compression());
   router.use(cookieParser());
+  router.use(
+    session({
+      secret: sessionSecret,
+      resave: false,
+      saveUninitialized: true,
+      cookie: { secure: false },
+    })
+  );
+  router.use(flash());
 
   if (process.env.NODE_ENV === 'development') {
     router.use(
@@ -114,7 +130,7 @@ export function createRequestHandler(): RequestHandler {
       .replace(/index$/, '');
 
     try {
-      const [{ notFound }, meta] = await renderApp(href as string);
+      const [{ notFound }, meta] = await renderApp(href as string, req);
       if (notFound === true) {
         return res.status(404).json({
           error: 'Page not found',
@@ -153,7 +169,7 @@ export function createRequestHandler(): RequestHandler {
 
   router.get('*', async (req, res) => {
     try {
-      const [PremixApp, data] = await renderApp(req.originalUrl);
+      const [PremixApp, data] = await renderApp(req.originalUrl, req);
 
       if ((PremixApp as any).notFound === true) {
         return res.status(404).send('Page not found');

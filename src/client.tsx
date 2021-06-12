@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
-import { useRouter } from './router';
+import { useNavigate } from 'react-router-dom';
+import { useLocation } from './router';
 import { PremixState } from './types';
 
 export function formatDataURL(url: string) {
@@ -27,18 +28,22 @@ export default function filterUnique<TArr extends Array<any>>(arr: TArr) {
 }
 
 export function usePrefetchRouteData() {
-  const router = useRouter();
+  // Can't use `useRouter`
+  // because of circular function call
+  // useRouter -> usePrefetchRouteData -> useRouter
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return useCallback(
     async (href: string) => {
       const data = await fetchRouteData(href);
 
-      router.navigate(router.href, {
+      navigate(location.pathname, {
         replace: true,
         state: {
-          ...router.state,
+          ...location.state,
           links: filterUnique([
-            ...router.state.links,
+            ...location.state.links,
             ...data.links.map(link => {
               const isJs = link.href.endsWith('.js');
 
@@ -58,6 +63,6 @@ export function usePrefetchRouteData() {
         },
       });
     },
-    [router]
+    [navigate, location]
   );
 }

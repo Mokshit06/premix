@@ -1,5 +1,6 @@
 import { PremixServerRouter } from '@premix/core/router';
 import { Metafile } from 'esbuild';
+import { Request } from 'express';
 import { match } from 'path-to-regexp';
 import React from 'react';
 import { URL } from 'url';
@@ -29,8 +30,8 @@ if (process.env.NODE_ENV === 'production') {
   stylesheetMap = getStylesheetMap(metafile);
 }
 
-export default async function renderApp(url: string) {
-  const urlWithoutQuery = new URL(url, 'https://example.com').pathname;
+export default async function renderApp(href: string, req?: Request) {
+  const url = new URL(href, 'https://example.com');
 
   if (process.env.NODE_ENV === 'development') {
     metafile = getMetaFile();
@@ -42,7 +43,7 @@ export default async function renderApp(url: string) {
   const route: Route & {
     pagePath: string;
   } = globalThis.__PREMIX_MANIFEST__.find(x =>
-    matchRoute(x.path, urlWithoutQuery)
+    matchRoute(x.path, url.pathname)
   );
 
   if (!route) {
@@ -57,22 +58,35 @@ export default async function renderApp(url: string) {
   const page: Unwrap<Page> = {
     links: routerPage.links || (() => []),
     meta: routerPage.meta || (() => ({})),
-    loader: routerPage.loader || (async () => ({ props: {} })),
+    serverLoader: routerPage.serverLoader || (async () => ({ props: {} })),
+    staticLoader: routerPage.staticLoader || (async () => ({ props: {} })),
     default: routerPage.default || (() => <h1>404</h1>),
     headers: routerPage.headers || (() => ({})),
     config: routerPage.config || {},
   };
 
-  // const params = exec(urlWithoutQuery, param(route.path));
+  // const params = exec(url.pathname, param(route.path));
   const matchedRoute = match(route.path, { decode: decodeURIComponent })(
-    urlWithoutQuery
+    url.pathname
   );
 
   if (!matchedRoute) return;
 
   const { params } = matchedRoute;
 
-  const data = await page.loader({ params });
+  let data: any;
+
+  if (page.serverLoader) {
+    const reqParams = req.params;
+    req.params = params as any;
+    data = await page.serverLoader(req);
+    req.params = reqParams;
+  } else {
+    data = await page.staticLoader({
+      params,
+      query: Object.fromEntries(url.searchParams),
+    });
+  }
   const meta = page.meta(data.props);
   const headers = page.headers(data.props);
   const Component = routerPage.default;
@@ -105,7 +119,7 @@ export default async function renderApp(url: string) {
           script,
           noJs: page.config.noJs,
         }}
-        location={url}
+        location={href}
       >
         <App Component={Component} />
       </PremixServerRouter>

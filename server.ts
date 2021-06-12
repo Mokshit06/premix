@@ -4,7 +4,12 @@ import express from 'express';
 
 const app = express();
 
-app.use('/', createRequestHandler());
+app.use(
+  '/',
+  createRequestHandler({
+    sessionSecret: 'some_secret',
+  })
+);
 
 const port = process.env.PORT || 3000;
 

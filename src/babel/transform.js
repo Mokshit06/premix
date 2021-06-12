@@ -1,11 +1,13 @@
 const EXPORT_NAME_ACTION = 'action';
-const EXPORT_NAME_LOADER = 'loader';
+const EXPORT_NAME_SERVER_LOADER = 'serverLoader';
+const EXPORT_NAME_STATIC_LOADER = 'staticLoader';
 const EXPORT_NAME_META = 'meta';
 const EXPORT_NAME_LOAD_PATHS = 'loadPaths';
 const EXPORT_NAME_HEADERS = 'headers';
 
 const ssgExports = new Set([
-  EXPORT_NAME_LOADER,
+  EXPORT_NAME_SERVER_LOADER,
+  EXPORT_NAME_STATIC_LOADER,
   EXPORT_NAME_ACTION,
   EXPORT_NAME_META,
   EXPORT_NAME_LOAD_PATHS,
@@ -68,7 +70,7 @@ function markImport(path, state) {
 
 const isDataIdentifier = (name, state) => {
   if (ssgExports.has(name)) {
-    if (name === EXPORT_NAME_LOADER) {
+    if (name === EXPORT_NAME_SERVER_LOADER) {
       state.isServerProps = true;
     }
 

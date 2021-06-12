@@ -32,6 +32,7 @@ export function useRouter() {
   const navigate = useNavigate();
   const params = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const prefetch = usePrefetchRouteData();
 
   return {
     href: pathname,
@@ -41,6 +42,7 @@ export function useRouter() {
     navigate,
     searchParams,
     setSearchParams,
+    prefetch,
   };
 }
 
@@ -53,12 +55,12 @@ export interface LinkProps extends Omit<ReactRouterLinkProps, 'to'> {
 }
 
 export function Link({ href, ...props }: LinkProps) {
-  const prefetchRouteData = usePrefetchRouteData();
+  const router = useRouter();
   const fetchedData = useRef(false);
 
   const prefetch = async () => {
     if (fetchedData.current) return;
-    prefetchRouteData(href);
+    router.prefetch(href);
     fetchedData.current = true;
   };
 
@@ -110,6 +112,7 @@ export function PremixBrowserRouter({
 
   useIsomorphicLayoutEffect(() => {
     return history.listen(async update => {
+      console.log(update);
       try {
         setPendingLocation(true);
         let data = {};
