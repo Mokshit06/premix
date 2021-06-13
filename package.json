@@ -4,10 +4,10 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "dev:server": "cross-env SERVER=true node src/build && node src/watcher",
+    "dev:server": "node src/build && node src/watcher",
     "dev": "yarn clear && concurrently \"yarn watch\" \"yarn dev:server\"",
-    "watch": "nodemon --quiet --watch app/pages -e tsx,jsx,js --exec cross-env WATCH=true node src/build.js",
-    "build": "cross-env SERVER=true yarn prerender",
+    "watch": "nodemon --quiet --watch app/pages -e tsx,jsx,js,ts --exec cross-env WATCH=true node src/build.js",
+    "build": "yarn prerender",
     "build:prod": "yarn clear && cross-env NODE_ENV=production node src/build && rm -rf .premix/build/*.css .premix/build/*.webp",
     "build:dev": "yarn clear && cross-env NODE_ENV=development node src/build",
     "clear": "rm -rf .premix/*",

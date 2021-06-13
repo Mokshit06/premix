@@ -14,7 +14,7 @@ const chalk = require('chalk');
 
 const isProd = process.env.NODE_ENV === 'production';
 const shouldWatch = process.env.WATCH === 'true';
-const shouldBundleServer = process.env.SERVER === 'true';
+const shouldBundleServer = true;
 
 /** @type {esbuild.Plugin} */
 const clientScriptPlugin = {
@@ -183,6 +183,7 @@ const clientConfig = {
     ? {
         async onRebuild(error, result) {
           if (error) return;
+          console.log('REBUILDING CLIENT');
           fs.outputJsonSync('.premix/build/meta.json', result.metafile);
         },
       }
@@ -258,6 +259,14 @@ const serverConfig = {
   ],
   plugins: [clientScriptPlugin, ...commonConfig.plugins],
   sourcemap: 'inline',
+  watch: shouldWatch
+    ? {
+        onRebuild(err) {
+          console.error(err);
+          console.log('REBUILDING');
+        },
+      }
+    : false,
 };
 /** @type {esbuild.BuildOptions} */
 const prerenderConfig = {
