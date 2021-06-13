@@ -6,7 +6,7 @@ import React from 'react';
 import { URL } from 'url';
 import { PremixProvider } from '..';
 import App from '../../app/App';
-import { Page, Route } from '../types';
+import { Link, Meta, Page, Route } from '../types';
 import {
   getMetaFile,
   getPageChunk,
@@ -30,7 +30,23 @@ if (process.env.NODE_ENV === 'production') {
   stylesheetMap = getStylesheetMap(metafile);
 }
 
-export default async function renderApp(href: string, req?: Request) {
+export default async function renderApp(
+  href: string,
+  req?: Request
+): Promise<
+  [
+    { (): JSX.Element; notFound?: boolean },
+    {
+      links: Link[];
+      data: any;
+      meta: Meta;
+      params: object;
+      script: string;
+      headers: Record<string, string>;
+      revalidate?: number;
+    }
+  ]
+> {
   const url = new URL(href, 'https://example.com');
 
   if (process.env.NODE_ENV === 'development') {
@@ -65,7 +81,6 @@ export default async function renderApp(href: string, req?: Request) {
     config: routerPage.config || {},
   };
 
-  // const params = exec(url.pathname, param(route.path));
   const matchedRoute = match(route.path, { decode: decodeURIComponent })(
     url.pathname
   );
@@ -74,7 +89,10 @@ export default async function renderApp(href: string, req?: Request) {
 
   const { params } = matchedRoute;
 
-  let data: any;
+  let data: {
+    props: any;
+    revalidate?: number;
+  };
 
   if (page.serverLoader) {
     const reqParams = req.params;
@@ -136,6 +154,7 @@ export default async function renderApp(href: string, req?: Request) {
       params,
       script,
       headers,
+      revalidate: data.revalidate,
     },
   ];
 }

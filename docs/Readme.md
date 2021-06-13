@@ -86,6 +86,10 @@ If you export an async function called `staticLoader` from a page, Premix will p
 export const staticLoader: StaticLoaderFunction = async ctx => {
   return {
     props: {},
+    // Premix will attempt to re-generate the page:
+    // - When a request comes in
+    // - At most once every 10 seconds
+    revalidate: 10, // In seconds
   };
 };
 ```

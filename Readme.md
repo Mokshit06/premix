@@ -5,6 +5,7 @@ Premix is an open source alternative to [Remix](https://remix.run/) with the sam
 ### Features
 
 - Server Side Rendering and Static Site Generation on per page basis
+- Incremental Static Regeneration
 - Meta tags for better SEO
 - Data Fetching
 - Data Mutation

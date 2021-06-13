@@ -1,10 +1,6 @@
 import { useRouteData } from '@premix/core';
 import { Link } from '@premix/core/router';
-import {
-  ServerLoaderFunction,
-  MetaFunction,
-  StaticLoaderFunction,
-} from '@premix/core/types';
+import { MetaFunction, StaticLoaderFunction } from '@premix/core/types';
 import Image from 'img:../assets/dummy_image.png?width=500&placeholder';
 import { useEffect } from 'react';
 import MyWorker from 'worker:../lib/worker';
@@ -32,12 +28,12 @@ export const staticLoader: StaticLoaderFunction = async () => {
     props: {
       posts,
     },
-    // revalidate: 10,
+    revalidate: 60,
   };
 };
 
 export default function Home() {
-  const { posts } = useRouteData<{ posts: Post[] }>();
+  const { posts } = useRouteData<{ posts: Post[]; time: number }>();
 
   useEffect(() => {
     const worker = new MyWorker();

@@ -7,7 +7,8 @@ const app = express();
 app.use(
   '/',
   createRequestHandler({
-    sessionSecret: 'some_secret',
+    // Change this to an environment variable
+    session: { secret: 'some_secret' },
   })
 );
 

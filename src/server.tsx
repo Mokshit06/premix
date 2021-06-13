@@ -7,30 +7,30 @@ import { ErrorOverlay } from '.';
 import handleRequest from '../app/entry-server';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/render-app';
-import cookieParser from 'cookie-parser';
 import { Route } from './types';
 import flash from 'connect-flash';
-import session from 'express-session';
+import session, { SessionOptions } from 'express-session';
+import { compile } from 'path-to-regexp';
+import fs from 'fs-extra';
 
 global.fetch = fetch as any;
 
 const routes = globalThis.__PREMIX_MANIFEST__ as Route[];
 
 export function createRequestHandler({
-  sessionSecret,
+  session: sessionOptions,
 }: {
-  sessionSecret: string;
+  session: Partial<SessionOptions> & { secret: string };
 }): RequestHandler {
   const router = Router();
 
   router.use(compression());
-  router.use(cookieParser());
   router.use(
     session({
-      secret: sessionSecret,
       resave: false,
       saveUninitialized: true,
-      cookie: { secure: false },
+      cookie: { secure: process.env.NODE_ENV === 'production' },
+      ...sessionOptions,
     })
   );
   router.use(flash());
@@ -50,61 +50,51 @@ export function createRequestHandler({
     next();
   });
 
-  // const revalidateState = {};
+  const revalidateState = new Map<string, number>();
 
-  // Promise.all(
-  //   routes.map(async route => {
-  //     const page = await route.page();
+  router.get('*', async (req, res, next) => {
+    if (process.env.NODE_ENV === 'development') return next();
 
-  //     if (page.loadPaths) {
-  //       const { paths } = await page.loadPaths();
-  //       paths.forEach(path => {
-  //         const toPath = compile(route.path, { encode: encodeURIComponent });
-  //         const url = toPath(path.params);
+    res.on('finish', async () => {
+      try {
+        const [PremixApp, data] = await renderApp(req.originalUrl);
 
-  //         revalidateState[url] = Date.now();
-  //       });
-  //     } else {
-  //       revalidateState[route.path] = Date.now();
-  //     }
-  //   })
-  // );
+        if (PremixApp.notFound) {
+          return;
+        }
 
-  // router.get('*', async (req, res, next) => {
-  //   if (process.env.NODE_ENV === 'development') return next();
+        let pageState = revalidateState.get(req.originalUrl);
 
-  //   res.on('finish', async () => {
-  //     try {
-  //       const [PremixApp, data] = await renderApp(req.originalUrl);
+        if (!data.revalidate) {
+          return;
+        }
 
-  //       if (PremixApp.notFound) {
-  //         return;
-  //       }
+        if (!pageState) {
+          revalidateState.set(req.originalUrl, data.revalidate);
+          pageState = Date.now();
+        }
 
-  //       if (
-  //         !revalidateState[req.originalUrl] ||
-  //         Date.now() - revalidateState[req.originalUrl] > 1_000
-  //       ) {
-  //         const fileName = req.originalUrl === '/' ? '/index' : req.originalUrl;
+        if (Date.now() - pageState > data.revalidate * 1000) {
+          const fileName = req.originalUrl === '/' ? '/index' : req.originalUrl;
 
-  //         await fs.outputFile(
-  //           `.premix/public${fileName}.html`,
-  //           handleRequest(PremixApp),
-  //           'utf8'
-  //         );
-  //         await fs.outputJSON(
-  //           `.premix/public/_premix/data${fileName}.json`,
-  //           data
-  //         );
-  //         revalidateState[req.originalUrl] = Date.now();
-  //       } else {
-  //         console.log(Date.now() - revalidateState[req.originalUrl]);
-  //       }
-  //     } catch (error) {}
-  //   });
+          await fs.outputFile(
+            `.premix/public${fileName}.html`,
+            handleRequest(PremixApp),
+            'utf8'
+          );
+          await fs.outputJSON(
+            `.premix/public/_premix/data${fileName}.json`,
+            data
+          );
+          revalidateState.set(req.originalUrl, Date.now());
+        } else {
+          console.log(Date.now() - pageState);
+        }
+      } catch (error) {}
+    });
 
-  //   next();
-  // });
+    next();
+  });
 
   router.use(
     express.static('.premix/public', {
@@ -130,7 +120,7 @@ export function createRequestHandler({
       .replace(/index$/, '');
 
     try {
-      const [{ notFound }, meta] = await renderApp(href as string, req);
+      const [{ notFound }, pageData] = await renderApp(href as string, req);
 
       if (notFound === true) {
         return res.status(404).json({
@@ -138,7 +128,7 @@ export function createRequestHandler({
         });
       }
 
-      const { headers, ...data } = meta;
+      const { headers, ...data } = pageData;
 
       Object.entries(headers).forEach(([key, value]) =>
         res.setHeader(key, value as string)
@@ -154,10 +144,12 @@ export function createRequestHandler({
   });
 
   router.get('/api/*', async (req, res) => {
-    const apiRoute = (globalThis.__API_ROUTES__ as Array<{
-      path: string;
-      handler: any;
-    }>).find(route => {
+    const apiRoute = (
+      globalThis.__API_ROUTES__ as Array<{
+        path: string;
+        handler: any;
+      }>
+    ).find(route => {
       return matchRoute(route.path, req.url);
     });
 
