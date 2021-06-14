@@ -91,6 +91,7 @@ export default function ActionPage() {
       )}
       {errors.map(err => (
         <div
+          key={err}
           style={{
             padding: '10px 15px',
             backgroundColor: 'orange',

@@ -1,13 +1,12 @@
 import { useRouteData } from '@premix/core';
+import { Link } from '@premix/core/router';
 import {
   HeadersFunction,
-  ServerLoaderFunction,
+  LoadPathsFunction,
   MetaFunction,
   StaticLoaderFunction,
-  LoadPathsFunction,
 } from '@premix/core/types';
 import '../../styles/style.css';
-import { Link } from '@premix/core/router';
 
 export const meta: MetaFunction = ({ post }) => {
   return {

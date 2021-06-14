@@ -1,17 +1,17 @@
+import chalk from 'chalk';
 import compression from 'compression';
+import flash from 'connect-flash';
 import express, { RequestHandler, Router } from 'express';
+import session, { SessionOptions } from 'express-session';
+import fs from 'fs-extra';
 import morgan from 'morgan';
 import fetch from 'node-fetch';
 import ReactDOMServer from 'react-dom/server';
 import { ErrorOverlay } from '.';
 import handleRequest from '../app/entry-server';
+import { Route } from './types';
 import matchRoute from './utils/matchRoute';
 import renderApp from './utils/render-app';
-import { Route } from './types';
-import flash from 'connect-flash';
-import session, { SessionOptions } from 'express-session';
-import { compile } from 'path-to-regexp';
-import fs from 'fs-extra';
 
 global.fetch = fetch as any;
 
@@ -57,17 +57,27 @@ export function createRequestHandler({
 
     res.on('finish', async () => {
       try {
+        const url = new URL(req.originalUrl, 'https://example.com');
+
+        const route: Route & {
+          pagePath: string;
+        } = globalThis.__PREMIX_MANIFEST__.find(x =>
+          matchRoute(x.path, url.pathname)
+        );
+
+        if (!route) return;
+
+        const page = await route.page();
+
+        if (page.serverLoader || page.action) return;
+
         const [PremixApp, data] = await renderApp(req.originalUrl);
 
-        if (PremixApp.notFound) {
-          return;
-        }
+        if (PremixApp.notFound) return;
 
         let pageState = revalidateState.get(req.originalUrl);
 
-        if (!data.revalidate) {
-          return;
-        }
+        if (!data.revalidate) return;
 
         if (!pageState) {
           revalidateState.set(req.originalUrl, data.revalidate);
@@ -90,7 +100,12 @@ export function createRequestHandler({
         } else {
           console.log(Date.now() - pageState);
         }
-      } catch (error) {}
+      } catch (error) {
+        console.log(
+          chalk`{red ✖} Error during regenerating ${req.originalUrl}`
+        );
+        console.error(error);
+      }
     });
 
     next();

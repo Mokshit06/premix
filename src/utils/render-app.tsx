@@ -22,6 +22,7 @@ let metafile: Metafile;
 let scripts: string[];
 let rootScript: string;
 let stylesheetMap: Record<string, string>;
+const pageChunks: Record<string, string[]> = {};
 
 if (process.env.NODE_ENV === 'production') {
   metafile = getMetaFile();
@@ -40,6 +41,7 @@ export default async function renderApp(
       links: Link[];
       data: any;
       meta: Meta;
+      // eslint-disable-next-line @typescript-eslint/ban-types
       params: object;
       script: string;
       headers: Record<string, string>;
@@ -101,8 +103,7 @@ export default async function renderApp(
     req.params = reqParams;
   } else {
     data = await page.staticLoader({
-      params,
-      query: Object.fromEntries(url.searchParams),
+      params: params as any,
     });
   }
 
@@ -124,8 +125,31 @@ export default async function renderApp(
     links.push(
       { rel: 'modulepreload', href: script },
       { rel: 'modulepreload', href: chunk.replace(/^\.premix\/public/, '') },
-      ...scripts.map(i => ({ rel: 'modulepreload', href: i }))
+      ...scripts.map(i => ({
+        rel: 'modulepreload',
+        href: i,
+      }))
     );
+  }
+
+  if (pageChunks[chunk]) {
+    links.push(
+      ...pageChunks[chunk].map(i => ({
+        rel: 'modulepreload',
+        href: i,
+      }))
+    );
+  } else {
+    const scripts = getScripts(metafile, chunk);
+
+    links.push(
+      ...scripts.map(i => ({
+        rel: 'modulepreload',
+        href: i,
+      }))
+    );
+
+    pageChunks[chunk] = scripts;
   }
 
   const RemixApp = () => (

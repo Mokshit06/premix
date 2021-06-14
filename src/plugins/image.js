@@ -1,5 +1,3 @@
-const chalk = require('chalk');
-
 /** @type {import('esbuild').Plugin} */
 const plugin = {
   name: 'image-loader',
@@ -47,7 +45,7 @@ const plugin = {
       const { params } = args.pluginData;
       const filePath = params.get('path');
 
-      const time = Date.now();
+      // const time = Date.now();
 
       const transformer = sharp(filePath)
         .normalise()
@@ -82,7 +80,7 @@ const plugin = {
       const width = parseNumber(params.get('width'));
       const filePath = params.get('path');
 
-      const time = Date.now();
+      // const time = Date.now();
 
       const transformer = sharp(filePath).rotate();
 
@@ -118,10 +116,8 @@ const plugin = {
       const shouldGeneratePlaceholder = params.get('placeholder') !== null;
 
       const transformer = sharp(pathname);
-      const {
-        width: metaWidth,
-        height: metaHeight,
-      } = await transformer.metadata();
+      const { width: metaWidth, height: metaHeight } =
+        await transformer.metadata();
       const aspectRatio = metaWidth / metaHeight;
       const numberWidth = parseNumber(width);
 

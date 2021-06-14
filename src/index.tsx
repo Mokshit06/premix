@@ -11,7 +11,6 @@ import React, {
   useState,
 } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { fetchRouteData } from './client';
 import { Route } from './types';
 import loadable from './utils/loadable';
 
@@ -20,12 +19,12 @@ interface PendingFormData {
   data: FormData;
 }
 
-const PendingLocationContext = createContext<
-  [boolean, React.Dispatch<React.SetStateAction<boolean>>]
->(null);
-const PendingFormDataContext = createContext<
-  [PendingFormData, React.Dispatch<React.SetStateAction<PendingFormData>>]
->(null);
+const PendingLocationContext =
+  createContext<[boolean, React.Dispatch<React.SetStateAction<boolean>>]>(null);
+const PendingFormDataContext =
+  createContext<
+    [PendingFormData, React.Dispatch<React.SetStateAction<PendingFormData>>]
+  >(null);
 
 const ErrorFallbackComponent =
   process.env.NODE_ENV === 'development'

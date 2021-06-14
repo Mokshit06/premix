@@ -17,15 +17,12 @@ export interface Link {
 export type LinksFunction<TData = any> = (data: TData) => Link[];
 export type MetaFunction<TData = any> = (data: TData) => Meta;
 export type StaticLoaderFunction<TData = any> = (ctx: {
-  params: any;
-  query: Record<string, string>;
+  params: Record<string, string>;
 }) => Promise<{
   props: TData;
   revalidate?: number;
 }>;
-export type ServerLoaderFunction<TData = any> = (
-  req: Request
-) => Promise<{
+export type ServerLoaderFunction<TData = any> = (req: Request) => Promise<{
   props: TData;
 }>;
 export type ActionFunction = (request: Request, response: Response) => any;

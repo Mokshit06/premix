@@ -19,6 +19,7 @@ const urlPlugin = {
     });
 
     build.onLoad({ filter: /.*/, namespace: 'url' }, async args => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { plugins, stdin, ...options } = build.initialOptions;
 
       const result = await esbuild.build({

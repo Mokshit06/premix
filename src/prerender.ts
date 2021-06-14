@@ -102,6 +102,6 @@ async function prerender() {
 
 prerender()
   .catch(error => {
-    spinner.fail(error.message ? error.message : error);
+    spinner.fail(error.message);
   })
   .finally(() => process.exit(0));

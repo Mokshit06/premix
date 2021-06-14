@@ -183,7 +183,6 @@ const clientConfig = {
     ? {
         async onRebuild(error, result) {
           if (error) return;
-          console.log('REBUILDING CLIENT');
           fs.outputJsonSync('.premix/build/meta.json', result.metafile);
         },
       }
@@ -263,7 +262,6 @@ const serverConfig = {
     ? {
         onRebuild(err) {
           console.error(err);
-          console.log('REBUILDING');
         },
       }
     : false,

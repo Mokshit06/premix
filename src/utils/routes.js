@@ -10,7 +10,12 @@ exports.getRoutes = () => {
       const path = fileName
         .replace(/\.(tsx|js|jsx)$/, '')
         .split('/')
-        .map(x => x.replace(/^\[(.*)\]$/, ':$1'))
+        .map(x =>
+          x.replace(/^\[(.*)\]$/, (substr, path) => {
+            // TODO allow catch all routes
+            return `:${path}`;
+          })
+        )
         .join('/');
 
       return {

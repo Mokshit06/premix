@@ -140,12 +140,9 @@ export function PremixBrowserRouter({
   }, [history]);
 
   return (
-    <Router
-      children={children}
-      action={state.action}
-      location={state.location}
-      navigator={history}
-    />
+    <Router action={state.action} location={state.location} navigator={history}>
+      {children}
+    </Router>
   );
 }
 
@@ -162,8 +159,8 @@ export function PremixServerRouter({
     loc = parsePath(loc);
   }
 
-  let action = Action.Pop;
-  let location: Location = {
+  const action = Action.Pop;
+  const location: Location = {
     pathname: loc.pathname || '/',
     search: loc.search || '',
     hash: loc.hash || '',
@@ -171,7 +168,7 @@ export function PremixServerRouter({
     key: loc.key || 'default',
   };
 
-  let staticNavigator = {
+  const staticNavigator = {
     createHref(to: To) {
       return typeof to === 'string' ? to : createPath(to);
     },
@@ -219,11 +216,12 @@ export function PremixServerRouter({
 
   return (
     <Router
-      children={children}
       action={action}
       location={location}
       navigator={staticNavigator}
       static={true}
-    />
+    >
+      {children}
+    </Router>
   );
 }
