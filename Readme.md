@@ -1,5 +1,7 @@
 # Premix
 
+#### NOTE: Premix was made before Remix went open source and is not recommended now. I recommend you use remix or nextjs instead.
+
 Premix is an open source alternative to [Remix](https://remix.run/) with the same modern API.
 
 ### Features
